@@ -36,6 +36,8 @@ public class GeneralListener implements Listener {
             cancelCombatTimer(damager);
             startCombatTimer(damaged);
             startCombatTimer(damager);
+            damaged.setGliding(false);
+            damager.setGliding(false);
         } else if (event.getDamager() instanceof Arrow damager) {
             ProjectileSource shooter = damager.getShooter();
             if (shooter instanceof Player player && event.getEntity() instanceof Player damaged) {
@@ -43,6 +45,8 @@ public class GeneralListener implements Listener {
                 cancelCombatTimer(player);
                 startCombatTimer(damaged);
                 startCombatTimer(player);
+                damaged.setGliding(false);
+                player.setGliding(false);
             }
         } else if (event.getDamager() instanceof Trident damager) {
             ProjectileSource shooter = damager.getShooter();
@@ -51,6 +55,8 @@ public class GeneralListener implements Listener {
                 cancelCombatTimer(player);
                 startCombatTimer(damaged);
                 startCombatTimer(player);
+                damaged.setGliding(false);
+                player.setGliding(false);
             }
         }
     }

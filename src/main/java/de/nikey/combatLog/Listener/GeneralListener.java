@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -25,13 +26,12 @@ public class GeneralListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        // Load the list of ignored worlds from the config
         List<String> ignoredWorlds = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.ignored-worlds");
 
-        // Check if the event occurs in one of the ignored worlds
         if (ignoredWorlds.contains(event.getEntity().getWorld().getName())) return;
 
         if (event.getEntity() instanceof Player damaged && event.getDamager() instanceof Player damager) {
+            if (damaged == damager)return;
             cancelCombatTimer(damaged);
             cancelCombatTimer(damager);
             startCombatTimer(damaged);
@@ -41,6 +41,7 @@ public class GeneralListener implements Listener {
         } else if (event.getDamager() instanceof Arrow damager) {
             ProjectileSource shooter = damager.getShooter();
             if (shooter instanceof Player player && event.getEntity() instanceof Player damaged) {
+                if (player == damaged)return;
                 cancelCombatTimer(damaged);
                 cancelCombatTimer(player);
                 startCombatTimer(damaged);
@@ -51,6 +52,7 @@ public class GeneralListener implements Listener {
         } else if (event.getDamager() instanceof Trident damager) {
             ProjectileSource shooter = damager.getShooter();
             if (shooter instanceof Player player && event.getEntity() instanceof Player damaged) {
+                if (player == damaged)return;
                 cancelCombatTimer(damaged);
                 cancelCombatTimer(player);
                 startCombatTimer(damaged);
@@ -65,7 +67,6 @@ public class GeneralListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
 
-        // Broadcast a combat log message if the player leaves while in combat
         if (combatTimers.containsKey(player.getUniqueId())) {
             String combatLogMessage = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.combat-log")
                     .replace("{player}", player.getName());
@@ -76,11 +77,23 @@ public class GeneralListener implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true)
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        Player player = event.getPlayer();
+        boolean teleporting = CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.teleporting-disabled-in-combat");
+        if (teleporting && combatTimers.containsKey(player.getUniqueId())) {
+            event.setCancelled(true);
+            String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.teleporting-denied");
+            String codes = ChatColor.translateAlternateColorCodes('&', message);
+            player.sendMessage(Component.text(codes));
+        }
+    }
+
+
+    @EventHandler(ignoreCancelled = true)
     public void onEntityToggleGlide(EntityToggleGlideEvent event) {
         if (event.getEntity() instanceof Player player) {
             boolean elytraDisabled = CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.elytra-disabled-in-combat");
 
-            // Prevent the player from using Elytra while in combat
             if (elytraDisabled && combatTimers.containsKey(player.getUniqueId()) && event.isGliding()) {
                 player.setGliding(false);
                 event.setCancelled(true);
@@ -108,16 +121,13 @@ public class GeneralListener implements Listener {
         UUID playerId = player.getUniqueId();
         int timerDuration = CombatLog.getPlugin(CombatLog.class).getConfig().getInt("combat-log.timer-duration");
 
-        // Check if the player is already in combat
         if (combatTimers.containsKey(playerId)) {
-            combatTimers.put(playerId, timerDuration); // Just reset the timer count
+            combatTimers.put(playerId, timerDuration);
             return;
         }
 
-        // Set initial timer value
         combatTimers.put(playerId, timerDuration);
 
-        // Create and start a new timer task
         BukkitRunnable timerTask = new BukkitRunnable() {
             @Override
             public void run() {
@@ -146,13 +156,12 @@ public class GeneralListener implements Listener {
                 } else {
                     combatTimers.remove(playerId);
                     activeTimers.remove(playerId);
-                    cancel(); // Stop the task once the timer reaches 0
+                    cancel();
                 }
             }
         };
         timerTask.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0, 20); // Runs every second (20 ticks)
 
-        // Store the active timer task so it can be canceled later
         activeTimers.put(playerId, timerTask);
     }
 
@@ -160,7 +169,6 @@ public class GeneralListener implements Listener {
         UUID playerId = player.getUniqueId();
         combatTimers.remove(playerId);
 
-        // Cancel the player's active timer, if it exists
         if (activeTimers.containsKey(playerId)) {
             activeTimers.get(playerId).cancel();
             activeTimers.remove(playerId);

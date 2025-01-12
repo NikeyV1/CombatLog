@@ -3,7 +3,9 @@ combat-log:
   ignored-worlds: # List of worlds where the combat timer is ignored
     - "ffa"
   elytra-disabled-in-combat: true # If true, Elytra usage is disabled while in combat
+  teleporting-disabled-in-combat: false # If true, teleporting in any way is disabled while in combat
   messages:
     combat-log: "&c{player} has combat logged!" # Message broadcasted when a player logs out during combat
     elytra-use-denied: "&dYou can't use elytra in combat" # Message sent when Elytra usage is denied in combat
     action-bar-timer: "&c{timeLeft}/{maxTime}" # Action bar message showing the remaining combat time
+    teleporting-denied: "§dYou can't teleport in combat" # Message sent when a player tries to teleport in combat

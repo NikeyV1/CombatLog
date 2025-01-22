@@ -60,6 +60,17 @@ public class GeneralListener implements Listener {
                 damaged.setGliding(false);
                 player.setGliding(false);
             }
+        } else if (event.getDamager() instanceof WitherSkull skull) {
+            ProjectileSource shooter = skull.getShooter();
+            if (shooter instanceof Player player && event.getEntity() instanceof Player damaged) {
+                if (player == damaged)return;
+                cancelCombatTimer(damaged);
+                cancelCombatTimer(player);
+                startCombatTimer(damaged);
+                startCombatTimer(player);
+                damaged.setGliding(false);
+                player.setGliding(false);
+            }
         }
     }
 

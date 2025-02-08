@@ -1,6 +1,7 @@
 package de.nikey.combatLog.Listener;
 
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
+import de.nikey.buffSMP.General.ShowCooldown;
 import de.nikey.combatLog.CombatLog;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -163,7 +164,11 @@ public class GeneralListener implements Listener {
                             .replace("{maxTime}",String.valueOf(timerDuration));
 
                     String codes = ChatColor.translateAlternateColorCodes('&', actionBarMessage);
-                    player.sendActionBar(Component.text(codes));
+                    if (CombatLog.isBuffSMP) {
+                        if (!ShowCooldown.viewingPlayers.containsKey(playerId)) {
+                            player.sendActionBar(Component.text(codes));
+                        }
+                    }
                 } else {
                     combatTimers.remove(playerId);
                     activeTimers.remove(playerId);

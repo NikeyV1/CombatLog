@@ -9,9 +9,14 @@ import static de.nikey.combatLog.Listener.GeneralListener.activeTimers;
 import static de.nikey.combatLog.Listener.GeneralListener.combatTimers;
 
 public final class CombatLog extends JavaPlugin {
+    public static boolean isBuffSMP = false;
 
     @Override
     public void onEnable() {
+
+        if (getServer().getPluginManager().getPlugin("Trust") != null) {
+            isBuffSMP = true;
+        }
         saveDefaultConfig();
         Bukkit.getPluginManager().registerEvents(new GeneralListener(), this);
 

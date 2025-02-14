@@ -11,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.projectiles.ProjectileSource;
@@ -18,6 +19,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class GeneralListener implements Listener {
@@ -74,6 +76,31 @@ public class GeneralListener implements Listener {
             }
         }
     }
+
+    private final Map<UUID, Long> playerCooldowns = new HashMap<>();
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.stop-riptiding",false))return;
+        if (!combatTimers.containsKey(player.getUniqueId()))return;
+        if (player.isRiptiding()) {
+            long currentTime = System.currentTimeMillis();
+            long lastThrowTime = playerCooldowns.getOrDefault(player.getUniqueId(), 0L);
+
+            if (currentTime - lastThrowTime >= CombatLog.getPlugin(CombatLog.class).getConfig().getInt("combat-log.cooldown",10000)) {
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        playerCooldowns.put(player.getUniqueId(), currentTime);
+                    }
+                }.runTaskLater(CombatLog.getPlugin(CombatLog.class),20*2);
+            } else {
+                event.setCancelled(true);
+            }
+        }
+    }
+
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
@@ -168,6 +195,8 @@ public class GeneralListener implements Listener {
                         if (!ShowCooldown.viewingPlayers.containsKey(playerId)) {
                             player.sendActionBar(Component.text(codes));
                         }
+                    }else {
+                        player.sendActionBar(Component.text(codes));
                     }
                 } else {
                     combatTimers.remove(playerId);

@@ -14,7 +14,7 @@ public final class CombatLog extends JavaPlugin {
     @Override
     public void onEnable() {
 
-        if (getServer().getPluginManager().getPlugin("Trust") != null) {
+        if (getServer().getPluginManager().getPlugin("BuffSMP") != null) {
             isBuffSMP = true;
         }
         saveDefaultConfig();

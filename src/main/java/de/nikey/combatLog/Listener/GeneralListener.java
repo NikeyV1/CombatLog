@@ -3,10 +3,13 @@ package de.nikey.combatLog.Listener;
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import de.nikey.buffSMP.General.ShowCooldown;
 import de.nikey.combatLog.CombatLog;
-import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Trident;
+import org.bukkit.entity.WitherSkull;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -97,6 +100,8 @@ public class GeneralListener implements Listener {
                 }.runTaskLater(CombatLog.getPlugin(CombatLog.class),20*2);
             } else {
                 event.setCancelled(true);
+                double damage = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.punishment-damage", 0);
+                player.damage(damage);
             }
         }
     }
@@ -107,10 +112,10 @@ public class GeneralListener implements Listener {
         Player player = event.getPlayer();
 
         if (combatTimers.containsKey(player.getUniqueId())) {
-            String combatLogMessage = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.combat-log")
+            String combatLogMessage = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.combat-log","&c{player} has combat logged!")
                     .replace("{player}", player.getName());
-            String codes = ChatColor.translateAlternateColorCodes('&', combatLogMessage);
-            Bukkit.broadcast(Component.text(codes));
+            TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(combatLogMessage);
+            Bukkit.broadcast(component);
             cancelCombatTimer(player);
         }
     }
@@ -121,9 +126,11 @@ public class GeneralListener implements Listener {
         boolean teleporting = CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.teleporting-disabled-in-combat");
         if (teleporting && combatTimers.containsKey(player.getUniqueId())) {
             event.setCancelled(true);
-            String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.teleporting-denied");
-            String codes = ChatColor.translateAlternateColorCodes('&', message);
-            player.sendMessage(Component.text(codes));
+            String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.teleporting-denied","§dYou can't teleport in combat");
+            TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(message);
+            player.sendMessage(component);
+            double damage = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.punishment-damage", 0);
+            player.damage(damage);
         }
     }
 
@@ -136,9 +143,11 @@ public class GeneralListener implements Listener {
             if (elytraDisabled && combatTimers.containsKey(player.getUniqueId()) && event.isGliding()) {
                 player.setGliding(false);
                 event.setCancelled(true);
-                String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.elytra-use-denied");
-                String codes = ChatColor.translateAlternateColorCodes('&', message);
-                player.sendMessage(Component.text(codes));
+                double damage = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.punishment-damage", 0);
+                player.damage(damage);
+                String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.elytra-use-denied","&dYou can't use elytra in combat");
+                TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(message);
+                player.sendMessage(component);
             }
         }
     }
@@ -149,9 +158,11 @@ public class GeneralListener implements Listener {
 
         if (CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.elytra-disabled-in-combat") && combatTimers.containsKey(player.getUniqueId())) {
             event.setCancelled(true);
-            String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.elytra-use-denied");
-            String codes = ChatColor.translateAlternateColorCodes('&', message);
-            player.sendMessage(Component.text(codes));
+            double damage = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.punishment-damage", 0);
+            player.damage(damage);
+            String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.elytra-use-denied","&dYou can't use elytra in combat");
+            TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(message);
+            player.sendMessage(component);
         }
     }
 
@@ -186,17 +197,17 @@ public class GeneralListener implements Listener {
                 int timeLeft = combatTimers.get(playerId);
                 if (timeLeft > 0) {
                     combatTimers.put(playerId, timeLeft - 1);
-                    String actionBarMessage = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.action-bar-timer")
+                    String actionBarMessage = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.action-bar-timer","&c{timeLeft}/{maxTime}")
                             .replace("{timeLeft}", String.valueOf(timeLeft))
                             .replace("{maxTime}",String.valueOf(timerDuration));
 
-                    String codes = ChatColor.translateAlternateColorCodes('&', actionBarMessage);
+                    TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(actionBarMessage);
                     if (CombatLog.isBuffSMP) {
                         if (!ShowCooldown.viewingPlayers.containsKey(playerId)) {
-                            player.sendActionBar(Component.text(codes));
+                            player.sendActionBar(component);
                         }
                     }else {
-                        player.sendActionBar(Component.text(codes));
+                        player.sendActionBar(component);
                     }
                 } else {
                     combatTimers.remove(playerId);

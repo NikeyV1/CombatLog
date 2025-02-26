@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="BuffSMP">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../../Plugins/BuffSMP.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

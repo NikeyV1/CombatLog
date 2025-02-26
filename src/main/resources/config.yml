@@ -7,6 +7,9 @@ combat-log:
   stop-riptiding: false #Stops players from using Riptide
   cooldown: 10000 # Cooldown for riptide in sec*100
   punishment-damage: 5.0 # the damage as a punishment for doing restricted actions. 0 = off
+  combat-zone:
+    enabled: true # A zone to set players in combat
+    radius: 10 # Zone range
   messages:
     combat-log: "&c{player} has combat logged!" # Message broadcasted when a player logs out during combat
     elytra-use-denied: "&dYou can't use elytra in combat" # Message sent when Elytra usage is denied in combat

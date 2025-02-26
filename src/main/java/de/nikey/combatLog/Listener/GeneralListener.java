@@ -3,6 +3,7 @@ package de.nikey.combatLog.Listener;
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import de.nikey.buffSMP.General.ShowCooldown;
 import de.nikey.combatLog.CombatLog;
+import de.nikey.trust.Trust;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
@@ -14,6 +15,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -79,6 +81,48 @@ public class GeneralListener implements Listener {
             }
         }
     }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.combat-zone.enabled",false))return;
+        Player player = event.getPlayer();
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!player.isOnline()) {
+                    cancel();
+                    return;
+                }
+                double radius = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.combat-zone.radius", 10);
+
+                for (Player players : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
+                    if (player == players)continue;
+                    if (players.isDead())continue;
+                    if (CombatLog.isTrust) {
+                        if (Trust.isTrusted(player.getUniqueId(),players.getUniqueId())) {
+                            if (Trust.hasFriendlyFire(player.getUniqueId())) {
+                                cancelCombatTimer(players);
+                                cancelCombatTimer(player);
+                                startCombatTimer(player);
+                                startCombatTimer(players);
+                            }
+                        }else {
+                            cancelCombatTimer(players);
+                            cancelCombatTimer(player);
+                            startCombatTimer(player);
+                            startCombatTimer(players);
+                        }
+                    }else {
+                        cancelCombatTimer(players);
+                        cancelCombatTimer(player);
+                        startCombatTimer(player);
+                        startCombatTimer(players);
+                    }
+                }
+            }
+        }.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0,20);
+    }
+
 
     private final Map<UUID, Long> playerCooldowns = new HashMap<>();
 
@@ -169,12 +213,14 @@ public class GeneralListener implements Listener {
 
     private void startCombatTimer(Player player) {
         UUID playerId = player.getUniqueId();
+        player.setGliding(false);
         int timerDuration = CombatLog.getPlugin(CombatLog.class).getConfig().getInt("combat-log.timer-duration");
 
         if (combatTimers.containsKey(playerId)) {
             combatTimers.put(playerId, timerDuration);
             return;
         }
+
 
         combatTimers.put(playerId, timerDuration);
 

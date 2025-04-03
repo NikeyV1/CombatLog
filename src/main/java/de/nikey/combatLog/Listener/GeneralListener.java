@@ -171,6 +171,7 @@ public class GeneralListener implements Listener {
         Player player = event.getPlayer();
         boolean teleporting = CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.teleporting-disabled-in-combat");
         if (teleporting && combatTimers.containsKey(player.getUniqueId())) {
+            if (event.getCause() == PlayerTeleportEvent.TeleportCause.UNKNOWN)return;
             event.setCancelled(true);
             String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.teleporting-denied","§dYou can't teleport in combat");
             TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(message);
@@ -185,7 +186,6 @@ public class GeneralListener implements Listener {
     public void onEntityToggleGlide(EntityToggleGlideEvent event) {
         if (event.getEntity() instanceof Player player) {
             boolean elytraDisabled = CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.elytra-disabled-in-combat");
-
             if (elytraDisabled && combatTimers.containsKey(player.getUniqueId()) && event.isGliding()) {
                 player.setGliding(false);
                 event.setCancelled(true);

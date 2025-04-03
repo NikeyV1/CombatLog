@@ -85,6 +85,7 @@ public class GeneralListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerJoin(PlayerJoinEvent event) {
         if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.combat-zone.enabled",false))return;
+        List<String> ignoredWorlds = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.ignored-worlds");
         Player player = event.getPlayer();
         new BukkitRunnable() {
             @Override
@@ -98,6 +99,7 @@ public class GeneralListener implements Listener {
                 for (Player players : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
                     if (player == players)continue;
                     if (players.isDead())continue;
+                    if (ignoredWorlds.contains(players.getWorld().getName())) return;
                     if (CombatLog.isTrust) {
                         if (Trust.isTrusted(player.getUniqueId(),players.getUniqueId())) {
                             if (Trust.hasFriendlyFire(player.getUniqueId())) {
@@ -262,7 +264,7 @@ public class GeneralListener implements Listener {
                 }
             }
         };
-        timerTask.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0, 20); // Runs every second (20 ticks)
+        timerTask.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0, 20);
 
         activeTimers.put(playerId, timerTask);
     }

@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Trident;
 import org.bukkit.entity.WitherSkull;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
@@ -32,7 +33,7 @@ public class GeneralListener implements Listener {
     public static final HashMap<UUID, Integer> combatTimers = new HashMap<>();
     public static final HashMap<UUID, BukkitRunnable> activeTimers = new HashMap<>();
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true,priority = EventPriority.HIGH)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         List<String> ignoredWorlds = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.ignored-worlds");
 
@@ -156,7 +157,6 @@ public class GeneralListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-
         if (combatTimers.containsKey(player.getUniqueId())) {
             String combatLogMessage = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.combat-log","&c{player} has combat logged!")
                     .replace("{player}", player.getName());
@@ -201,7 +201,6 @@ public class GeneralListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerElytraBoost(PlayerElytraBoostEvent event) {
         Player player = event.getPlayer();
-
         if (CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.elytra-disabled-in-combat") && combatTimers.containsKey(player.getUniqueId())) {
             event.setCancelled(true);
             double damage = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.punishment-damage", 0);

@@ -7,6 +7,7 @@ combat-log:
   stop-riptiding: false #Stops players from using Riptide
   cooldown: 10000 # Cooldown for riptide in sec*100
   punishment-damage: 5.0 # the damage as a punishment for doing restricted actions. 0 = off
+  kill_when_log: false
   combat-zone:
     enabled: true # A zone to set players in combat
     radius: 10 # Zone range

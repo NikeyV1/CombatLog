@@ -36,7 +36,6 @@ public class GeneralListener implements Listener {
     @EventHandler(ignoreCancelled = true,priority = EventPriority.HIGH)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         List<String> ignoredWorlds = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.ignored-worlds");
-
         if (ignoredWorlds.contains(event.getEntity().getWorld().getName())) return;
 
         if (event.getEntity() instanceof Player damaged && event.getDamager() instanceof Player damager) {
@@ -162,6 +161,9 @@ public class GeneralListener implements Listener {
                     .replace("{player}", player.getName());
             TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(combatLogMessage);
             Bukkit.broadcast(component);
+            if (CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.kill_when_log",false)) {
+                player.setHealth(0);
+            }
             cancelCombatTimer(player);
         }
     }

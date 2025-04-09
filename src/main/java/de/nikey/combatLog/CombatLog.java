@@ -22,7 +22,6 @@ public final class CombatLog extends JavaPlugin {
         if (getServer().getPluginManager().getPlugin("Trust") != null) {
             isTrust = true;
         }
-
         saveDefaultConfig();
         Bukkit.getPluginManager().registerEvents(new GeneralListener(), this);
     }

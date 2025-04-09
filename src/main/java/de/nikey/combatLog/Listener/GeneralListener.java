@@ -1,9 +1,7 @@
 package de.nikey.combatLog.Listener;
 
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
-import de.nikey.buffSMP.General.ShowCooldown;
 import de.nikey.combatLog.CombatLog;
-import de.nikey.trust.Trust;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -109,26 +107,10 @@ public class GeneralListener implements Listener {
                     if (players.isDead())continue;
                     if (player.getGameMode() == GameMode.SPECTATOR || players.getGameMode() == GameMode.CREATIVE)continue;
                     if (ignoredWorlds.contains(players.getWorld().getName())) return;
-                    if (CombatLog.isTrust) {
-                        if (Trust.isTrusted(player.getUniqueId(),players.getUniqueId())) {
-                            if (Trust.hasFriendlyFire(player.getUniqueId())) {
-                                cancelCombatTimer(players);
-                                cancelCombatTimer(player);
-                                startCombatTimer(player);
-                                startCombatTimer(players);
-                            }
-                        }else {
-                            cancelCombatTimer(players);
-                            cancelCombatTimer(player);
-                            startCombatTimer(player);
-                            startCombatTimer(players);
-                        }
-                    }else {
-                        cancelCombatTimer(players);
-                        cancelCombatTimer(player);
-                        startCombatTimer(player);
-                        startCombatTimer(players);
-                    }
+                    cancelCombatTimer(players);
+                    cancelCombatTimer(player);
+                    startCombatTimer(player);
+                    startCombatTimer(players);
                 }
             }
         }.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0,20);
@@ -263,13 +245,7 @@ public class GeneralListener implements Listener {
                             .replace("{maxTime}",String.valueOf(timerDuration));
 
                     TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(actionBarMessage);
-                    if (CombatLog.isBuffSMP) {
-                        if (!ShowCooldown.viewingPlayers.containsKey(playerId)) {
-                            player.sendActionBar(component);
-                        }
-                    }else {
-                        player.sendActionBar(component);
-                    }
+                    player.sendActionBar(component);
                 } else {
                     combatTimers.remove(playerId);
                     activeTimers.remove(playerId);

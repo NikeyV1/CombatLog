@@ -4,9 +4,13 @@ import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import de.nikey.buffSMP.General.ShowCooldown;
 import de.nikey.combatLog.CombatLog;
 import de.nikey.trust.Trust;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Trident;
@@ -82,6 +86,10 @@ public class GeneralListener implements Listener {
         }
     }
 
+    private boolean isAfk(Player player) {
+        return player.hasMetadata("afk") && player.getMetadata("afk").get(0).asBoolean();
+    }
+
     @EventHandler(ignoreCancelled = true)
     public void onPlayerJoin(PlayerJoinEvent event) {
         if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.combat-zone.enabled",false))return;
@@ -99,6 +107,7 @@ public class GeneralListener implements Listener {
                 for (Player players : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
                     if (player == players)continue;
                     if (players.isDead())continue;
+                    if (player.getGameMode() == GameMode.SPECTATOR || players.getGameMode() == GameMode.CREATIVE)continue;
                     if (ignoredWorlds.contains(players.getWorld().getName())) return;
                     if (CombatLog.isTrust) {
                         if (Trust.isTrusted(player.getUniqueId(),players.getUniqueId())) {
@@ -224,6 +233,9 @@ public class GeneralListener implements Listener {
             return;
         }
 
+        if (isAfk(player)) {
+            player.showTitle(Title.title(Component.empty(), Component.text("Please disable afk, you are in combat!").color(NamedTextColor.RED)));
+        }
 
         combatTimers.put(playerId, timerDuration);
 

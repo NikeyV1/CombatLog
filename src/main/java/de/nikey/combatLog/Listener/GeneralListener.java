@@ -2,6 +2,7 @@ package de.nikey.combatLog.Listener;
 
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import de.nikey.combatLog.CombatLog;
+import de.nikey.trust.Trust;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -102,15 +103,32 @@ public class GeneralListener implements Listener {
                 }
                 double radius = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.combat-zone.radius", 10);
 
+                if (player.getGameMode() == GameMode.SPECTATOR || player.getGameMode() == GameMode.CREATIVE)return;
                 for (Player players : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
                     if (player == players)continue;
                     if (players.isDead())continue;
-                    if (player.getGameMode() == GameMode.SPECTATOR || players.getGameMode() == GameMode.CREATIVE)continue;
+                    if (players.getGameMode() == GameMode.SPECTATOR || players.getGameMode() == GameMode.CREATIVE)continue;
                     if (ignoredWorlds.contains(players.getWorld().getName())) return;
-                    cancelCombatTimer(players);
-                    cancelCombatTimer(player);
-                    startCombatTimer(player);
-                    startCombatTimer(players);
+                    if (CombatLog.isTrust) {
+                        if (Trust.isTrusted(player.getUniqueId(),players.getUniqueId())) {
+                            if (Trust.hasFriendlyFire(player.getUniqueId())) {
+                                cancelCombatTimer(players);
+                                cancelCombatTimer(player);
+                                startCombatTimer(player);
+                                startCombatTimer(players);
+                            }
+                        }else {
+                            cancelCombatTimer(players);
+                            cancelCombatTimer(player);
+                            startCombatTimer(player);
+                            startCombatTimer(players);
+                        }
+                    }else {
+                        cancelCombatTimer(players);
+                        cancelCombatTimer(player);
+                        startCombatTimer(player);
+                        startCombatTimer(players);
+                    }
                 }
             }
         }.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0,20);
@@ -119,7 +137,7 @@ public class GeneralListener implements Listener {
 
     private final Map<UUID, Long> playerCooldowns = new HashMap<>();
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.stop-riptiding",false))return;

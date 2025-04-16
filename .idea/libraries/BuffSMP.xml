@@ -4,6 +4,8 @@
       <root url="jar://$PROJECT_DIR$/../../Plugins/BuffSMP.jar!/" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES />
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/../BuffSMP/src/main/java" />
+    </SOURCES>
   </library>
 </component>

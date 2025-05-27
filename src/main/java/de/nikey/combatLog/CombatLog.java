@@ -11,6 +11,7 @@ import static de.nikey.combatLog.Listener.GeneralListener.combatTimers;
 public final class CombatLog extends JavaPlugin {
     public static boolean isBuffSMP = false;
     public static boolean isTrust = false;
+    public static boolean isSpawnProtection = false;
 
     @Override
     public void onEnable() {
@@ -21,6 +22,10 @@ public final class CombatLog extends JavaPlugin {
 
         if (getServer().getPluginManager().getPlugin("Trust") != null) {
             isTrust = true;
+        }
+
+        if (getServer().getPluginManager().getPlugin("SpawnProtection") != null) {
+            isSpawnProtection = true;
         }
         saveDefaultConfig();
         Bukkit.getPluginManager().registerEvents(new GeneralListener(), this);

@@ -8,6 +8,8 @@ combat-log:
   cooldown: 10000 # Cooldown for riptide in sec*100
   punishment-damage: 5.0 # the damage as a punishment for doing restricted actions. 0 = off
   kill_when_log: false
+  blocked-commands: #Commands blocked in combat
+    - tpa
   combat-zone:
     enabled: true # A zone to set players in combat
     radius: 10 # Zone range
@@ -16,3 +18,4 @@ combat-log:
     elytra-use-denied: "&dYou can't use elytra in combat" # Message sent when Elytra usage is denied in combat
     action-bar-timer: "&c{timeLeft}/{maxTime}" # Action bar message showing the remaining combat time
     teleporting-denied: "§dYou can't teleport in combat" # Message sent when a player tries to teleport in combat
+    blocked-command: "§cYou can't use this command in combat" #Message sent when a player tries to execute a command in combat

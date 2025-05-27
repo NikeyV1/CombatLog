@@ -3,6 +3,7 @@ package de.nikey.combatLog.Listener;
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import de.nikey.buffSMP.General.ShowCooldown;
 import de.nikey.combatLog.CombatLog;
+import de.nikey.spawnProtection.SpawnProtection;
 import de.nikey.trust.Trust;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -20,10 +21,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -193,6 +191,20 @@ public class GeneralListener implements Listener {
         }
     }
 
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event) {
+        Player player = event.getPlayer();
+        if (!combatTimers.containsKey(player.getUniqueId()))return;
+        final String[] args = event.getMessage().split(" ");
+        List<String> stringList = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.blocked-commands");
+        String message = args[0].substring(1);
+
+        if (stringList.contains(message)) {
+            event.setCancelled(true);
+            player.sendMessage(CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.blocked-command","§cYou can't use this command in combat"));
+        }
+    }
+
 
     @EventHandler(ignoreCancelled = true)
     public void onEntityToggleGlide(EntityToggleGlideEvent event) {
@@ -225,8 +237,15 @@ public class GeneralListener implements Listener {
 
 
     private void startCombatTimer(Player player) {
+        if (CombatLog.isSpawnProtection) {
+            if (SpawnProtection.getProtectionManager().isProtected(player))return;
+        }
         UUID playerId = player.getUniqueId();
-        player.setGliding(false);
+
+        boolean elytraDisabled = CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.elytra-disabled-in-combat");
+        if (elytraDisabled) {
+            player.setGliding(false);
+        }
         int timerDuration = CombatLog.getPlugin(CombatLog.class).getConfig().getInt("combat-log.timer-duration");
 
         if (combatTimers.containsKey(playerId)) {

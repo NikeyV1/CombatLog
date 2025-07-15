@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="SpawnProtection">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/../../Plugins/SpawnProtection.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

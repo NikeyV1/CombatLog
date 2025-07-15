@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Trust">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/../../Plugins/Trust.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

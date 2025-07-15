@@ -1,10 +1,8 @@
 package de.nikey.combatLog.Listener;
 
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
-import de.nikey.buffSMP.General.ShowCooldown;
 import de.nikey.combatLog.CombatLog;
-import de.nikey.spawnProtection.SpawnProtection;
-import de.nikey.trust.Trust;
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -34,6 +32,7 @@ public class GeneralListener implements Listener {
 
     public static final HashMap<UUID, Integer> combatTimers = new HashMap<>();
     public static final HashMap<UUID, BukkitRunnable> activeTimers = new HashMap<>();
+    private final Map<UUID, BossBar> bossBars = new HashMap<>();
 
     @EventHandler(ignoreCancelled = true,priority = EventPriority.HIGH)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
@@ -108,26 +107,10 @@ public class GeneralListener implements Listener {
                     if (players.isDead())continue;
                     if (players.getGameMode() == GameMode.SPECTATOR || players.getGameMode() == GameMode.CREATIVE)continue;
                     if (ignoredWorlds.contains(players.getWorld().getName())) return;
-                    if (CombatLog.isTrust) {
-                        if (Trust.isTrusted(player.getUniqueId(),players.getUniqueId())) {
-                            if (Trust.hasFriendlyFire(player.getUniqueId())) {
-                                cancelCombatTimer(players);
-                                cancelCombatTimer(player);
-                                startCombatTimer(player);
-                                startCombatTimer(players);
-                            }
-                        }else {
-                            cancelCombatTimer(players);
-                            cancelCombatTimer(player);
-                            startCombatTimer(player);
-                            startCombatTimer(players);
-                        }
-                    }else {
-                        cancelCombatTimer(players);
-                        cancelCombatTimer(player);
-                        startCombatTimer(player);
-                        startCombatTimer(players);
-                    }
+                    cancelCombatTimer(players);
+                    cancelCombatTimer(player);
+                    startCombatTimer(player);
+                    startCombatTimer(players);
                 }
             }
         }.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0,20);
@@ -237,9 +220,6 @@ public class GeneralListener implements Listener {
 
 
     private void startCombatTimer(Player player) {
-        if (CombatLog.isSpawnProtection) {
-            if (SpawnProtection.getProtectionManager().isProtected(player))return;
-        }
         UUID playerId = player.getUniqueId();
 
         boolean elytraDisabled = CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.elytra-disabled-in-combat");
@@ -247,6 +227,7 @@ public class GeneralListener implements Listener {
             player.setGliding(false);
         }
         int timerDuration = CombatLog.getPlugin(CombatLog.class).getConfig().getInt("combat-log.timer-duration");
+        String displayType = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.timer-display", "actionbar").toLowerCase();
 
         if (combatTimers.containsKey(playerId)) {
             combatTimers.put(playerId, timerDuration);
@@ -259,56 +240,75 @@ public class GeneralListener implements Listener {
 
         combatTimers.put(playerId, timerDuration);
 
+        if (displayType.equals("bossbar")) {
+            BossBar bossBar = BossBar.bossBar(
+                    Component.text(""), 1.0f, BossBar.Color.RED, BossBar.Overlay.PROGRESS
+            );
+            bossBar.addViewer(player);
+            bossBars.put(playerId, bossBar);
+        }
+
         BukkitRunnable timerTask = new BukkitRunnable() {
             @Override
             public void run() {
-                if (!player.isValid()){
-                    combatTimers.remove(playerId);
-                    activeTimers.remove(playerId);
-                    cancel();
-                }
-
-                if (combatTimers.get(playerId) == null) {
-                    combatTimers.remove(playerId);
-                    activeTimers.remove(playerId);
+                if (!player.isValid()) {
+                    cleanup(playerId);
                     cancel();
                     return;
                 }
 
-                int timeLeft = combatTimers.get(playerId);
+                Integer timeLeft = combatTimers.get(playerId);
+                if (timeLeft == null) {
+                    cleanup(playerId);
+                    cancel();
+                    return;
+                }
+
                 if (timeLeft > 0) {
                     combatTimers.put(playerId, timeLeft - 1);
-                    String actionBarMessage = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.action-bar-timer","&c{timeLeft}/{maxTime}")
-                            .replace("{timeLeft}", String.valueOf(timeLeft))
-                            .replace("{maxTime}",String.valueOf(timerDuration));
 
-                    TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(actionBarMessage);
-                    if (CombatLog.isBuffSMP) {
-                        if (!ShowCooldown.viewingPlayers.containsKey(playerId)) {
-                            player.sendActionBar(component);
+                    if (displayType.equals("actionbar")) {
+                        String actionBarMessage = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.action-bar-timer", "&c{timeLeft}/{maxTime}")
+                                .replace("{timeLeft}", String.valueOf(timeLeft))
+                                .replace("{maxTime}", String.valueOf(timerDuration));
+                        player.sendActionBar(LegacyComponentSerializer.legacyAmpersand().deserialize(actionBarMessage));
+                    } else if (displayType.equals("bossbar")) {
+                        BossBar bar = bossBars.get(playerId);
+                        if (bar != null) {
+                            String bossBarText = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.bossbar-title", "&cIm Kampf: {timeLeft}s")
+                                    .replace("{timeLeft}", String.valueOf(timeLeft));
+                            bar.name(LegacyComponentSerializer.legacyAmpersand().deserialize(bossBarText));
+                            bar.progress((float) timeLeft / timerDuration);
                         }
-                    }else {
-                        player.sendActionBar(component);
                     }
                 } else {
-                    combatTimers.remove(playerId);
-                    activeTimers.remove(playerId);
+                    cleanup(playerId);
                     cancel();
                 }
             }
         };
         timerTask.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0, 20);
-
         activeTimers.put(playerId, timerTask);
     }
 
     private void cancelCombatTimer(Player player) {
         UUID playerId = player.getUniqueId();
+        cleanup(playerId);
+    }
+
+    private void cleanup(UUID playerId) {
         combatTimers.remove(playerId);
 
         if (activeTimers.containsKey(playerId)) {
             activeTimers.get(playerId).cancel();
             activeTimers.remove(playerId);
+        }
+
+        BossBar bossBar = bossBars.remove(playerId);
+        if (bossBar != null) {
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                bossBar.removeViewer(online);
+            }
         }
     }
 }

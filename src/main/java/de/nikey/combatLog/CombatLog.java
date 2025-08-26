@@ -1,5 +1,6 @@
 package de.nikey.combatLog;
 
+import de.nikey.combatLog.Listener.AntiKillAbuse;
 import de.nikey.combatLog.Listener.GeneralListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -14,6 +15,7 @@ public final class CombatLog extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         Bukkit.getPluginManager().registerEvents(new GeneralListener(), this);
+        new AntiKillAbuse(this);
     }
 
     @Override

@@ -21,3 +21,11 @@ combat-log:
     bossbar-title: "&cIn Combat: {timeLeft}s"
     teleporting-denied: "§dYou can't teleport in combat" # Message sent when a player tries to teleport in combat
     blocked-command: "§cYou can't use this command in combat" #Message sent when a player tries to execute a command in combat
+
+anti-kill-abuse:
+  enabled: true
+  max-kills: 5              # more than 5 kills = Abuse
+  remove-kill-after: 60     # kill removed from list in seconds
+  punish-commands:
+    - "kick {killer} Kill-Abuse detected!"
+    - "ban {killer}"        # Example command, can be everything

@@ -218,6 +218,17 @@ public class GeneralListener implements Listener {
         }
     }
 
+    @EventHandler
+    public void onMend(PlayerItemMendEvent event) {
+        if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.mending-disabled-in-combat",false)) return;
+
+        Player player = event.getPlayer();
+
+        if (combatTimers.containsKey(player.getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
 
     private void startCombatTimer(Player player) {
         UUID playerId = player.getUniqueId();

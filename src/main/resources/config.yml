@@ -8,6 +8,7 @@ combat-log:
   cooldown: 10000 # Cooldown for riptide in sec*100
   punishment-damage: 5.0 # the damage as a punishment for doing restricted actions. 0 = off
   kill_when_log: false
+  mending-disabled-in-combat: true
   timer-display: actionbar # "actionbar" oder "bossbar"
   blocked-commands: #Commands blocked in combat
     - tpa

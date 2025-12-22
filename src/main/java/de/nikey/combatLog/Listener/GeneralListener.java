@@ -1,6 +1,12 @@
 package de.nikey.combatLog.Listener;
 
 import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldguard.LocalPlayer;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.regions.RegionContainer;
+import com.sk89q.worldguard.protection.regions.RegionQuery;
 import de.nikey.combatLog.CombatLog;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
@@ -10,14 +16,14 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
-import org.bukkit.entity.Arrow;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Trident;
-import org.bukkit.entity.WitherSkull;
+import org.bukkit.Material;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.projectiles.ProjectileSource;
@@ -80,6 +86,56 @@ public class GeneralListener implements Listener {
                 damaged.setGliding(false);
                 player.setGliding(false);
             }
+        }else if (event.getDamager() instanceof EnderCrystal) {
+            if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.explosion-set-in-combat",true))return;
+            if (event.getEntity() instanceof Player damaged) {
+                cancelCombatTimer(damaged);
+                startCombatTimer(damaged);
+                damaged.setGliding(false);
+            }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    public void onEntityDamageByBlock(EntityDamageByBlockEvent event) {
+        if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.explosion-set-in-combat",true))return;
+        List<String> ignoredWorlds = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.ignored-worlds");
+        if (ignoredWorlds.contains(event.getEntity().getWorld().getName())) return;
+
+        if (event.getEntity() instanceof Player damaged) {
+            if (event.getCause() == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) {
+                cancelCombatTimer(damaged);
+                startCombatTimer(damaged);
+                damaged.setGliding(false);
+            } else if (event.getDamager() != null && event.getDamager().getType() == Material.RESPAWN_ANCHOR) {
+                cancelCombatTimer(damaged);
+                startCombatTimer(damaged);
+                damaged.setGliding(false);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerMoveIntoRegion(PlayerMoveEvent event) {
+        if (!CombatLog.isWorldGuardEnabled()) return;
+        Player player = event.getPlayer();
+
+        if (!combatTimers.containsKey(player.getUniqueId())) return;
+
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
+                event.getFrom().getBlockZ() == event.getTo().getBlockZ() &&
+                event.getFrom().getBlockY() == event.getTo().getBlockY()) return;
+
+        LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
+        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
+        RegionQuery query = container.createQuery();
+
+        if (!query.testState(BukkitAdapter.adapt(event.getTo()), localPlayer, CombatLog.ALLOW_COMBAT_ENTRY)) {
+            event.setCancelled(true);
+            player.teleport(event.getFrom()); // Sicherer Rückstoß
+
+            String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.region-entry-denied", "§cDu darfst diese Region im Kampf nicht betreten!");
+            player.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(message));
         }
     }
 

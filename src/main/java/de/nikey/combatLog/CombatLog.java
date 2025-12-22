@@ -1,5 +1,9 @@
 package de.nikey.combatLog;
 
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.protection.flags.StateFlag;
+import com.sk89q.worldguard.protection.flags.registry.FlagConflictException;
+import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 import de.nikey.combatLog.Listener.AntiKillAbuse;
 import de.nikey.combatLog.Listener.GeneralListener;
 import de.nikey.combatLog.Utils.Metrics;
@@ -11,6 +15,8 @@ import static de.nikey.combatLog.Listener.GeneralListener.activeTimers;
 import static de.nikey.combatLog.Listener.GeneralListener.combatTimers;
 
 public final class CombatLog extends JavaPlugin {
+
+    private static boolean worldGuardEnabled = false;
 
     @Override
     public void onEnable() {
@@ -26,5 +32,27 @@ public final class CombatLog extends JavaPlugin {
         combatTimers.clear();
         activeTimers.values().forEach(BukkitRunnable::cancel);
         activeTimers.clear();
+    }
+
+    public static StateFlag ALLOW_COMBAT_ENTRY;
+
+    @Override
+    public void onLoad() {
+        if (Bukkit.getPluginManager().getPlugin("WorldGuard") != null) {
+            try {
+                FlagRegistry registry = WorldGuard.getInstance().getFlagRegistry();
+                StateFlag flag = new StateFlag("allow-combat-entry", true);
+                registry.register(flag);
+                ALLOW_COMBAT_ENTRY = flag;
+                worldGuardEnabled = true;
+                getLogger().info("WorldGuard erkannt: Custom Flag 'allow-combat-entry' wurde registriert.");
+            } catch (Exception e) {
+                getLogger().warning("Fehler beim Registrieren der WorldGuard Flag: " + e.getMessage());
+            }
+        }
+    }
+
+    public static boolean isWorldGuardEnabled() {
+        return worldGuardEnabled;
     }
 }

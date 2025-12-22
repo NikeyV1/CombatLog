@@ -4,6 +4,7 @@ combat-log:
     - "ffa"
   elytra-disabled-in-combat: true # If true, Elytra usage is disabled while in combat
   teleporting-disabled-in-combat: false # If true, teleporting in any way is disabled while in combat
+  explosion-set-in-combat: true #If true endcrystals and block explosions set players affected in combat
   stop-riptiding: false #Stops players from using Riptide
   cooldown: 10000 # Cooldown for riptide in sec*100
   punishment-damage: 5.0 # the damage as a punishment for doing restricted actions. 0 = off
@@ -22,6 +23,7 @@ combat-log:
     bossbar-title: "&cIn Combat: {timeLeft}s"
     teleporting-denied: "§dYou can't teleport in combat" # Message sent when a player tries to teleport in combat
     blocked-command: "§cYou can't use this command in combat" #Message sent when a player tries to execute a command in combat
+    region-entry-denied: "§cYou can't enter this region in combat"
 
 anti-kill-abuse:
   enabled: true

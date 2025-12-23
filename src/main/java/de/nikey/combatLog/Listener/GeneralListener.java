@@ -8,6 +8,7 @@ import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
 import de.nikey.combatLog.CombatLog;
+import de.nikey.combatLog.Utils.WorldGuardHook;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -130,7 +131,7 @@ public class GeneralListener implements Listener {
         RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
         RegionQuery query = container.createQuery();
 
-        if (!query.testState(BukkitAdapter.adapt(event.getTo()), localPlayer, CombatLog.ALLOW_COMBAT_ENTRY)) {
+        if (!query.testState(BukkitAdapter.adapt(event.getTo()), localPlayer, WorldGuardHook.ALLOW_COMBAT_ENTRY)) {
             event.setCancelled(true);
             player.teleport(event.getFrom()); // Sicherer Rückstoß
 

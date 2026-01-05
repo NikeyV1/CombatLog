@@ -1,7 +1,5 @@
 combat-log:
   timer-duration: 15 # Duration of the combat timer in seconds
-  ignored-worlds: # List of worlds where the combat timer is ignored
-    - "ffa"
   elytra-disabled-in-combat: true # If true, Elytra usage is disabled while in combat
   teleporting-disabled-in-combat: false # If true, teleporting in any way is disabled while in combat
   explosion-set-in-combat: true #If true endcrystals and block explosions set players affected in combat
@@ -11,11 +9,23 @@ combat-log:
   kill_when_log: false
   mending-disabled-in-combat: true
   timer-display: actionbar # "actionbar" oder "bossbar"
+  enderpearl:
+    # This option enables combat logging when a player uses an Ender Pearl while on land.
+    set-combat-on-land: true
+
+    # This option ensures that combat logging is triggered even if the player is not already in combat when they use an Ender Pearl.
+    only-if-already-in-combat: false
+
+  ignored-worlds: # List of worlds where the combat timer is ignored
+    - "ffa"
+
   blocked-commands: #Commands blocked in combat
     - tpa
+
   combat-zone:
     enabled: true # A zone to set players in combat
     radius: 10 # Zone range
+
   messages:
     combat-log: "&c{player} has combat logged!" # Message broadcasted when a player logs out during combat
     elytra-use-denied: "&dYou can't use elytra in combat" # Message sent when Elytra usage is denied in combat

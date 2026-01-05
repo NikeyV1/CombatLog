@@ -22,10 +22,7 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByBlockEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityToggleGlideEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -171,6 +168,31 @@ public class GeneralListener implements Listener {
                 }
             }
         }.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0,20);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
+    public void onEnderPearlLand(ProjectileHitEvent event) {
+        if (!(event.getEntity() instanceof EnderPearl pearl)) return;
+        if (!(pearl.getShooter() instanceof Player player)) return;
+
+        List<String> ignoredWorlds = CombatLog.getPlugin(CombatLog.class)
+                .getConfig().getStringList("combat-log.ignored-worlds");
+        if (ignoredWorlds.contains(player.getWorld().getName())) return;
+
+        boolean enabled = CombatLog.getPlugin(CombatLog.class)
+                .getConfig().getBoolean("combat-log.enderpearl.set-combat-on-land", true);
+        if (!enabled) return;
+
+        boolean onlyIfAlreadyInCombat = CombatLog.getPlugin(CombatLog.class)
+                .getConfig().getBoolean("combat-log.enderpearl.only-if-already-in-combat", false);
+
+        boolean isInCombat = combatTimers.containsKey(player.getUniqueId());
+
+        if (onlyIfAlreadyInCombat && !isInCombat) return;
+
+        cancelCombatTimer(player);
+        startCombatTimer(player);
+        player.setGliding(false);
     }
 
 

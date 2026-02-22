@@ -11,13 +11,13 @@ import de.nikey.combatLog.CombatLog;
 import de.nikey.combatLog.Utils.WorldGuardHook;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -38,54 +38,126 @@ public class GeneralListener implements Listener {
     public static final HashMap<UUID, BukkitRunnable> activeTimers = new HashMap<>();
     private final Map<UUID, BossBar> bossBars = new HashMap<>();
 
-    @EventHandler(ignoreCancelled = true,priority = EventPriority.HIGH)
+    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
+
+    // ------------------------------------------------------------
+    // Config helpers (new config structure)
+    // ------------------------------------------------------------
+
+    private boolean isIgnoredWorld(Player p) {
+        List<String> ignored = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.ignored-worlds");
+        return ignored.contains(p.getWorld().getName());
+    }
+
+    private boolean isIgnoredWorld(World w) {
+        List<String> ignored = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.ignored-worlds");
+        return ignored.contains(w.getName());
+    }
+
+    private int timerDurationSeconds() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getInt("combat-log.timer.duration-seconds", 15);
+    }
+
+    private String timerDisplayType() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.timer.display", "actionbar").toLowerCase();
+    }
+
+    private double punishmentDamage() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.punishment.damage", 0.0);
+    }
+
+    private boolean killOnLogout() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.punishment.kill-on-logout", false);
+    }
+
+    private boolean explosionsSetCombat() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.restrictions.explosions.set-combat-on-explosion", true);
+    }
+
+    private boolean teleportingDisabledInCombat() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.restrictions.teleporting.disabled-in-combat", false);
+    }
+
+    private boolean elytraDisabledInCombat() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.restrictions.elytra.disabled-in-combat", true);
+    }
+
+    private boolean mendingDisabledInCombat() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.restrictions.mending.disabled-in-combat", true);
+    }
+
+    private boolean stopRiptidingInCombat() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.restrictions.riptide.stop", false);
+    }
+
+    private int riptideCooldown() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getInt("combat-log.restrictions.riptide.cooldown", 10000);
+    }
+
+    private boolean combatZoneEnabled() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.combat-zone.enabled", false);
+    }
+
+    private double combatZoneRadius() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.combat-zone.radius", 10.0);
+    }
+
+    private boolean enderpearlSetCombatOnLand() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.triggers.enderpearl.set-combat-on-land", true);
+    }
+
+    private boolean enderpearlOnlyIfAlreadyInCombat() {
+        return CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.triggers.enderpearl.only-if-already-in-combat", false);
+    }
+
+    private Component msg(String path, String def) {
+        String raw = CombatLog.getPlugin(CombatLog.class).getConfig().getString(path, def);
+        return LEGACY.deserialize(raw);
+    }
+
+    // ------------------------------------------------------------
+    // Combat triggers
+    // ------------------------------------------------------------
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        List<String> ignoredWorlds = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.ignored-worlds");
-        if (ignoredWorlds.contains(event.getEntity().getWorld().getName())) return;
+        if (isIgnoredWorld(event.getEntity().getWorld())) return;
 
         if (event.getEntity() instanceof Player damaged && event.getDamager() instanceof Player damager) {
-            if (damaged == damager)return;
-            cancelCombatTimer(damaged);
-            cancelCombatTimer(damager);
-            startCombatTimer(damaged);
-            startCombatTimer(damager);
-            damaged.setGliding(false);
-            damager.setGliding(false);
-        } else if (event.getDamager() instanceof Arrow damager) {
-            ProjectileSource shooter = damager.getShooter();
-            if (shooter instanceof Player player && event.getEntity() instanceof Player damaged) {
-                if (player == damaged)return;
-                cancelCombatTimer(damaged);
-                cancelCombatTimer(player);
-                startCombatTimer(damaged);
-                startCombatTimer(player);
-                damaged.setGliding(false);
-                player.setGliding(false);
+            if (damaged == damager) return;
+            tagBoth(damaged, damager);
+            return;
+        }
+
+        if (event.getDamager() instanceof Arrow arrow) {
+            ProjectileSource shooter = arrow.getShooter();
+            if (shooter instanceof Player damager && event.getEntity() instanceof Player damaged) {
+                if (damager == damaged) return;
+                tagBoth(damaged, damager);
             }
-        } else if (event.getDamager() instanceof Trident damager) {
-            ProjectileSource shooter = damager.getShooter();
-            if (shooter instanceof Player player && event.getEntity() instanceof Player damaged) {
-                if (player == damaged)return;
-                cancelCombatTimer(damaged);
-                cancelCombatTimer(player);
-                startCombatTimer(damaged);
-                startCombatTimer(player);
-                damaged.setGliding(false);
-                player.setGliding(false);
+            return;
+        }
+
+        if (event.getDamager() instanceof Trident trident) {
+            ProjectileSource shooter = trident.getShooter();
+            if (shooter instanceof Player damager && event.getEntity() instanceof Player damaged) {
+                if (damager == damaged) return;
+                tagBoth(damaged, damager);
             }
-        } else if (event.getDamager() instanceof WitherSkull skull) {
+            return;
+        }
+
+        if (event.getDamager() instanceof WitherSkull skull) {
             ProjectileSource shooter = skull.getShooter();
-            if (shooter instanceof Player player && event.getEntity() instanceof Player damaged) {
-                if (player == damaged)return;
-                cancelCombatTimer(damaged);
-                cancelCombatTimer(player);
-                startCombatTimer(damaged);
-                startCombatTimer(player);
-                damaged.setGliding(false);
-                player.setGliding(false);
+            if (shooter instanceof Player damager && event.getEntity() instanceof Player damaged) {
+                if (damager == damaged) return;
+                tagBoth(damaged, damager);
             }
-        }else if (event.getDamager() instanceof EnderCrystal) {
-            if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.explosion-set-in-combat",true))return;
+            return;
+        }
+
+        if (event.getDamager() instanceof EnderCrystal) {
+            if (!explosionsSetCombat()) return;
             if (event.getEntity() instanceof Player damaged) {
                 cancelCombatTimer(damaged);
                 startCombatTimer(damaged);
@@ -94,11 +166,19 @@ public class GeneralListener implements Listener {
         }
     }
 
+    private void tagBoth(Player damaged, Player damager) {
+        cancelCombatTimer(damaged);
+        cancelCombatTimer(damager);
+        startCombatTimer(damaged);
+        startCombatTimer(damager);
+        damaged.setGliding(false);
+        damager.setGliding(false);
+    }
+
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void onEntityDamageByBlock(EntityDamageByBlockEvent event) {
-        if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.explosion-set-in-combat",true))return;
-        List<String> ignoredWorlds = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.ignored-worlds");
-        if (ignoredWorlds.contains(event.getEntity().getWorld().getName())) return;
+        if (!explosionsSetCombat()) return;
+        if (isIgnoredWorld(event.getEntity().getWorld())) return;
 
         if (event.getEntity() instanceof Player damaged) {
             if (event.getCause() == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) {
@@ -113,16 +193,20 @@ public class GeneralListener implements Listener {
         }
     }
 
+    // ------------------------------------------------------------
+    // WorldGuard region entry denial while in combat
+    // ------------------------------------------------------------
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerMoveIntoRegion(PlayerMoveEvent event) {
         if (!CombatLog.isWorldGuardEnabled()) return;
-        Player player = event.getPlayer();
 
+        Player player = event.getPlayer();
         if (!combatTimers.containsKey(player.getUniqueId())) return;
 
-        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
-                event.getFrom().getBlockZ() == event.getTo().getBlockZ() &&
-                event.getFrom().getBlockY() == event.getTo().getBlockY()) return;
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX()
+                && event.getFrom().getBlockZ() == event.getTo().getBlockZ()
+                && event.getFrom().getBlockY() == event.getTo().getBlockY()) return;
 
         LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
         RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
@@ -130,22 +214,29 @@ public class GeneralListener implements Listener {
 
         if (!query.testState(BukkitAdapter.adapt(event.getTo()), localPlayer, WorldGuardHook.ALLOW_COMBAT_ENTRY)) {
             event.setCancelled(true);
-            player.teleport(event.getFrom()); // Sicherer Rückstoß
+            player.teleport(event.getFrom());
 
-            String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.region-entry-denied", "§cDu darfst diese Region im Kampf nicht betreten!");
-            player.sendMessage(LegacyComponentSerializer.legacyAmpersand().deserialize(message));
+            player.sendMessage(msg(
+                    "combat-log.messages.region-entry-denied",
+                    "§cYou can't enter this region in combat"
+            ));
         }
     }
 
+    // ------------------------------------------------------------
+    // Combat zone tagging on join (kept as-is, just new paths)
+    // ------------------------------------------------------------
+
     private boolean isAfk(Player player) {
-        return player.hasMetadata("afk") && player.getMetadata("afk").get(0).asBoolean();
+        return player.hasMetadata("afk") && player.getMetadata("afk").getFirst().asBoolean();
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerJoin(PlayerJoinEvent event) {
-        if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.combat-zone.enabled",false))return;
-        List<String> ignoredWorlds = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.ignored-worlds");
+        if (!combatZoneEnabled()) return;
+
         Player player = event.getPlayer();
+
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -153,187 +244,236 @@ public class GeneralListener implements Listener {
                     cancel();
                     return;
                 }
-                double radius = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.combat-zone.radius", 10);
 
-                if (player.getGameMode() == GameMode.SPECTATOR || player.getGameMode() == GameMode.CREATIVE)return;
-                for (Player players : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
-                    if (player == players)continue;
-                    if (players.isDead())continue;
-                    if (players.getGameMode() == GameMode.SPECTATOR || players.getGameMode() == GameMode.CREATIVE)continue;
-                    if (ignoredWorlds.contains(players.getWorld().getName())) return;
-                    cancelCombatTimer(players);
+                if (player.getGameMode() == GameMode.SPECTATOR || player.getGameMode() == GameMode.CREATIVE) return;
+                if (isIgnoredWorld(player)) return;
+
+                double radius = combatZoneRadius();
+
+                for (Player nearby : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
+                    if (player == nearby) continue;
+                    if (nearby.isDead()) continue;
+                    if (nearby.getGameMode() == GameMode.SPECTATOR || nearby.getGameMode() == GameMode.CREATIVE) continue;
+                    if (isIgnoredWorld(nearby)) continue;
+
+                    cancelCombatTimer(nearby);
                     cancelCombatTimer(player);
                     startCombatTimer(player);
-                    startCombatTimer(players);
+                    startCombatTimer(nearby);
                 }
             }
-        }.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0,20);
+        }.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0L, 20L);
     }
+
+    // ------------------------------------------------------------
+    // Enderpearl trigger (new paths)
+    // ------------------------------------------------------------
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void onEnderPearlLand(ProjectileHitEvent event) {
         if (!(event.getEntity() instanceof EnderPearl pearl)) return;
         if (!(pearl.getShooter() instanceof Player player)) return;
+        if (isIgnoredWorld(player)) return;
 
-        List<String> ignoredWorlds = CombatLog.getPlugin(CombatLog.class)
-                .getConfig().getStringList("combat-log.ignored-worlds");
-        if (ignoredWorlds.contains(player.getWorld().getName())) return;
+        if (!enderpearlSetCombatOnLand()) return;
 
-        boolean enabled = CombatLog.getPlugin(CombatLog.class)
-                .getConfig().getBoolean("combat-log.enderpearl.set-combat-on-land", true);
-        if (!enabled) return;
-
-        boolean onlyIfAlreadyInCombat = CombatLog.getPlugin(CombatLog.class)
-                .getConfig().getBoolean("combat-log.enderpearl.only-if-already-in-combat", false);
-
+        boolean onlyIfAlready = enderpearlOnlyIfAlreadyInCombat();
         boolean isInCombat = combatTimers.containsKey(player.getUniqueId());
-
-        if (onlyIfAlreadyInCombat && !isInCombat) return;
+        if (onlyIfAlready && !isInCombat) return;
 
         cancelCombatTimer(player);
         startCombatTimer(player);
         player.setGliding(false);
     }
 
+    // ------------------------------------------------------------
+    // Riptide stop + cooldown (new paths)
+    // ------------------------------------------------------------
 
     private final Map<UUID, Long> playerCooldowns = new HashMap<>();
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.stop-riptiding",false))return;
-        if (!combatTimers.containsKey(player.getUniqueId()))return;
-        if (player.isRiptiding()) {
-            long currentTime = System.currentTimeMillis();
-            long lastThrowTime = playerCooldowns.getOrDefault(player.getUniqueId(), 0L);
 
-            if (currentTime - lastThrowTime >= CombatLog.getPlugin(CombatLog.class).getConfig().getInt("combat-log.cooldown",10000)) {
+        if (!stopRiptidingInCombat()) return;
+        if (!combatTimers.containsKey(player.getUniqueId())) return;
+
+        if (player.isRiptiding()) {
+            long now = System.currentTimeMillis();
+            long last = playerCooldowns.getOrDefault(player.getUniqueId(), 0L);
+
+            if (now - last >= riptideCooldown()) {
                 new BukkitRunnable() {
                     @Override
                     public void run() {
-                        playerCooldowns.put(player.getUniqueId(), currentTime);
+                        playerCooldowns.put(player.getUniqueId(), now);
                     }
-                }.runTaskLater(CombatLog.getPlugin(CombatLog.class),20*2);
+                }.runTaskLater(CombatLog.getPlugin(CombatLog.class), 20L * 2);
             } else {
                 event.setCancelled(true);
-                double damage = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.punishment-damage", 0);
-                player.damage(damage);
+                double dmg = punishmentDamage();
+                if (dmg > 0) player.damage(dmg);
             }
         }
     }
 
+    // ------------------------------------------------------------
+    // Logout during combat (new paths)
+    // ------------------------------------------------------------
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+
         if (combatTimers.containsKey(player.getUniqueId())) {
-            String combatLogMessage = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.combat-log","&c{player} has combat logged!")
+            String raw = CombatLog.getPlugin(CombatLog.class)
+                    .getConfig()
+                    .getString("combat-log.messages.combat-log", "&c{player} has combat logged!")
                     .replace("{player}", player.getName());
-            TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(combatLogMessage);
-            Bukkit.broadcast(component);
-            if (CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.kill_when_log",false)) {
+
+            Bukkit.broadcast(LEGACY.deserialize(raw));
+
+            if (killOnLogout()) {
                 player.setHealth(0);
             }
+
             cancelCombatTimer(player);
         }
     }
 
+    // ------------------------------------------------------------
+    // Teleport blocking (new paths)
+    // ------------------------------------------------------------
+
     @EventHandler(ignoreCancelled = true)
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         Player player = event.getPlayer();
-        boolean teleporting = CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.teleporting-disabled-in-combat");
-        if (teleporting && combatTimers.containsKey(player.getUniqueId())) {
-            if (event.getCause() == PlayerTeleportEvent.TeleportCause.UNKNOWN)return;
-            event.setCancelled(true);
-            String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.teleporting-denied","§dYou can't teleport in combat");
-            TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(message);
-            player.sendMessage(component);
-            double damage = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.punishment-damage", 0);
-            player.damage(damage);
-        }
+
+        if (!teleportingDisabledInCombat()) return;
+        if (!combatTimers.containsKey(player.getUniqueId())) return;
+
+        if (event.getCause() == PlayerTeleportEvent.TeleportCause.UNKNOWN) return;
+
+        event.setCancelled(true);
+        player.sendMessage(msg(
+                "combat-log.messages.teleporting-denied",
+                "§dYou can't teleport in combat"
+        ));
+
+        double dmg = punishmentDamage();
+        if (dmg > 0) player.damage(dmg);
     }
+
+    // ------------------------------------------------------------
+    // Blocked commands (new paths; also fixes component sending)
+    // ------------------------------------------------------------
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event) {
         Player player = event.getPlayer();
-        if (!combatTimers.containsKey(player.getUniqueId()))return;
-        final String[] args = event.getMessage().split(" ");
-        List<String> stringList = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.blocked-commands");
-        String message = args[0].substring(1);
+        if (!combatTimers.containsKey(player.getUniqueId())) return;
 
-        if (stringList.contains(message)) {
+        String[] args = event.getMessage().split(" ");
+        String cmd = args[0].startsWith("/") ? args[0].substring(1) : args[0];
+
+        List<String> blocked = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.blocked-commands");
+        if (blocked.isEmpty()) return;
+
+        if (blocked.contains(cmd)) {
             event.setCancelled(true);
-            player.sendMessage(CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.blocked-command","§cYou can't use this command in combat"));
+            player.sendMessage(msg(
+                    "combat-log.messages.blocked-command",
+                    "§cYou can't use this command in combat"
+            ));
         }
     }
 
+    // ------------------------------------------------------------
+    // Elytra restrictions (new paths)
+    // ------------------------------------------------------------
 
     @EventHandler(ignoreCancelled = true)
     public void onEntityToggleGlide(EntityToggleGlideEvent event) {
-        if (event.getEntity() instanceof Player player) {
-            boolean elytraDisabled = CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.elytra-disabled-in-combat");
-            if (elytraDisabled && combatTimers.containsKey(player.getUniqueId()) && event.isGliding()) {
-                player.setGliding(false);
-                event.setCancelled(true);
-                double damage = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.punishment-damage", 0);
-                player.damage(damage);
-                String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.elytra-use-denied","&dYou can't use elytra in combat");
-                TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(message);
-                player.sendMessage(component);
-            }
-        }
+        if (!(event.getEntity() instanceof Player player)) return;
+
+        if (!elytraDisabledInCombat()) return;
+        if (!combatTimers.containsKey(player.getUniqueId())) return;
+        if (!event.isGliding()) return;
+
+        player.setGliding(false);
+        event.setCancelled(true);
+
+        double dmg = punishmentDamage();
+        if (dmg > 0) player.damage(dmg);
+
+        player.sendMessage(msg(
+                "combat-log.messages.elytra-use-denied",
+                "&dYou can't use elytra in combat"
+        ));
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerElytraBoost(PlayerElytraBoostEvent event) {
         Player player = event.getPlayer();
-        if (CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.elytra-disabled-in-combat") && combatTimers.containsKey(player.getUniqueId())) {
-            event.setCancelled(true);
-            double damage = CombatLog.getPlugin(CombatLog.class).getConfig().getDouble("combat-log.punishment-damage", 0);
-            player.damage(damage);
-            String message = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.elytra-use-denied","&dYou can't use elytra in combat");
-            TextComponent component = LegacyComponentSerializer.legacyAmpersand().deserialize(message);
-            player.sendMessage(component);
-        }
+
+        if (!elytraDisabledInCombat()) return;
+        if (!combatTimers.containsKey(player.getUniqueId())) return;
+
+        event.setCancelled(true);
+
+        double dmg = punishmentDamage();
+        if (dmg > 0) player.damage(dmg);
+
+        player.sendMessage(msg(
+                "combat-log.messages.elytra-use-denied",
+                "&dYou can't use elytra in combat"
+        ));
     }
+
+    // ------------------------------------------------------------
+    // Mending disabled (new paths)
+    // ------------------------------------------------------------
 
     @EventHandler
     public void onMend(PlayerItemMendEvent event) {
-        if (!CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.mending-disabled-in-combat",false)) return;
+        if (!mendingDisabledInCombat()) return;
 
         Player player = event.getPlayer();
-
         if (combatTimers.containsKey(player.getUniqueId())) {
             event.setCancelled(true);
         }
     }
 
+    // ------------------------------------------------------------
+    // Timer system (new paths + message nesting)
+    // ------------------------------------------------------------
 
     private void startCombatTimer(Player player) {
         UUID playerId = player.getUniqueId();
 
-        boolean elytraDisabled = CombatLog.getPlugin(CombatLog.class).getConfig().getBoolean("combat-log.elytra-disabled-in-combat");
-        if (elytraDisabled) {
-            player.setGliding(false);
-        }
-        int timerDuration = CombatLog.getPlugin(CombatLog.class).getConfig().getInt("combat-log.timer-duration");
-        String displayType = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.timer-display", "actionbar").toLowerCase();
+        if (elytraDisabledInCombat()) player.setGliding(false);
 
+        int duration = timerDurationSeconds();
+        String displayType = timerDisplayType();
+
+        // refresh timer if already in combat
         if (combatTimers.containsKey(playerId)) {
-            combatTimers.put(playerId, timerDuration);
+            combatTimers.put(playerId, duration);
             return;
         }
 
         if (isAfk(player)) {
-            player.showTitle(Title.title(Component.empty(), Component.text("Please disable afk, you are in combat!").color(NamedTextColor.RED)));
+            player.showTitle(Title.title(
+                    Component.empty(),
+                    Component.text("Please disable afk, you are in combat!").color(NamedTextColor.RED)
+            ));
         }
 
-        combatTimers.put(playerId, timerDuration);
+        combatTimers.put(playerId, duration);
 
         if (displayType.equals("bossbar")) {
-            BossBar bossBar = BossBar.bossBar(
-                    Component.text(""), 1.0f, BossBar.Color.RED, BossBar.Overlay.PROGRESS
-            );
+            BossBar bossBar = BossBar.bossBar(Component.text(""), 1.0f, BossBar.Color.RED, BossBar.Overlay.PROGRESS);
             bossBar.addViewer(player);
             bossBars.put(playerId, bossBar);
         }
@@ -358,17 +498,24 @@ public class GeneralListener implements Listener {
                     combatTimers.put(playerId, timeLeft - 1);
 
                     if (displayType.equals("actionbar")) {
-                        String actionBarMessage = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.action-bar-timer", "&c{timeLeft}/{maxTime}")
-                                .replace("{timeLeft}", String.valueOf(timeLeft))
-                                .replace("{maxTime}", String.valueOf(timerDuration));
-                        player.sendActionBar(LegacyComponentSerializer.legacyAmpersand().deserialize(actionBarMessage));
+                        String raw = CombatLog.getPlugin(CombatLog.class)
+                                .getConfig()
+                                .getString("combat-log.messages.timer.actionbar", "&c{timeLeft}/{maxTime}");
+
+                        raw = raw.replace("{timeLeft}", String.valueOf(timeLeft))
+                                .replace("{maxTime}", String.valueOf(duration));
+
+                        player.sendActionBar(LEGACY.deserialize(raw));
                     } else if (displayType.equals("bossbar")) {
                         BossBar bar = bossBars.get(playerId);
                         if (bar != null) {
-                            String bossBarText = CombatLog.getPlugin(CombatLog.class).getConfig().getString("combat-log.messages.bossbar-title", "&cIm Kampf: {timeLeft}s")
+                            String raw = CombatLog.getPlugin(CombatLog.class)
+                                    .getConfig()
+                                    .getString("combat-log.messages.timer.bossbar-title", "&cIn Combat: {timeLeft}s")
                                     .replace("{timeLeft}", String.valueOf(timeLeft));
-                            bar.name(LegacyComponentSerializer.legacyAmpersand().deserialize(bossBarText));
-                            bar.progress((float) timeLeft / timerDuration);
+
+                            bar.name(LEGACY.deserialize(raw));
+                            bar.progress((float) timeLeft / (float) duration);
                         }
                     }
                 } else {
@@ -377,27 +524,25 @@ public class GeneralListener implements Listener {
                 }
             }
         };
-        timerTask.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0, 20);
+
+        timerTask.runTaskTimer(CombatLog.getPlugin(CombatLog.class), 0L, 20L);
         activeTimers.put(playerId, timerTask);
     }
 
     private void cancelCombatTimer(Player player) {
-        UUID playerId = player.getUniqueId();
-        cleanup(playerId);
+        cleanup(player.getUniqueId());
     }
 
     private void cleanup(UUID playerId) {
         combatTimers.remove(playerId);
 
-        if (activeTimers.containsKey(playerId)) {
-            activeTimers.get(playerId).cancel();
-            activeTimers.remove(playerId);
-        }
+        BukkitRunnable task = activeTimers.remove(playerId);
+        if (task != null) task.cancel();
 
-        BossBar bossBar = bossBars.remove(playerId);
-        if (bossBar != null) {
+        BossBar bar = bossBars.remove(playerId);
+        if (bar != null) {
             for (Player online : Bukkit.getOnlinePlayers()) {
-                bossBar.removeViewer(online);
+                bar.removeViewer(online);
             }
         }
     }

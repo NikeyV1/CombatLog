@@ -1,5 +1,5 @@
 name: CombatLog
-version: 1.12
+version: 1.13
 main: de.nikey.combatLog.CombatLog
 api-version: 1.21
 authors: [ Nikey ]

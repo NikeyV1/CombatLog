@@ -14,8 +14,6 @@ import static de.nikey.combatLog.Listener.GeneralListener.combatTimers;
 
 public final class CombatLog extends JavaPlugin {
 
-    private static boolean worldGuardEnabled = false;
-
     @Override
     public void onEnable() {
         saveDefaultConfig();
@@ -26,7 +24,7 @@ public final class CombatLog extends JavaPlugin {
                 "LI8sodAD"
         ).checkForUpdates();
 
-        Metrics metrics = new Metrics(this,	28071);
+        new Metrics(this, 28071);
     }
 
     @Override
@@ -47,6 +45,6 @@ public final class CombatLog extends JavaPlugin {
 
 
     public static boolean isWorldGuardEnabled() {
-        return worldGuardEnabled;
+        return WorldGuardHook.isWorldGuardEnabled();
     }
 }

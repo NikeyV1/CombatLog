@@ -200,6 +200,7 @@ public class GeneralListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerMoveIntoRegion(PlayerMoveEvent event) {
         if (!CombatLog.isWorldGuardEnabled()) return;
+        if (event.getTo() == null) return;
 
         Player player = event.getPlayer();
         if (!combatTimers.containsKey(player.getUniqueId())) return;
@@ -376,11 +377,16 @@ public class GeneralListener implements Listener {
 
         String[] args = event.getMessage().split(" ");
         String cmd = args[0].startsWith("/") ? args[0].substring(1) : args[0];
+        cmd = cmd.toLowerCase(java.util.Locale.ROOT);
 
         List<String> blocked = CombatLog.getPlugin(CombatLog.class).getConfig().getStringList("combat-log.blocked-commands");
         if (blocked.isEmpty()) return;
 
-        if (blocked.contains(cmd)) {
+        boolean isBlocked = blocked.stream()
+                .map(s -> s.toLowerCase(java.util.Locale.ROOT))
+                .anyMatch(cmd::equals);
+
+        if (isBlocked) {
             event.setCancelled(true);
             player.sendMessage(msg(
                     "combat-log.messages.blocked-command",

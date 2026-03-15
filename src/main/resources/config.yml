@@ -56,6 +56,7 @@ combat-log:
     teleporting-denied: "&dYou can't teleport in combat"
     blocked-command: "&cYou can't use this command in combat"
     region-entry-denied: "&cYou can't enter this region in combat"
+    riptide-denied: "&cYou can't use riptide in combat"
 
     timer:
       actionbar: "&c{timeLeft}/{maxTime}"

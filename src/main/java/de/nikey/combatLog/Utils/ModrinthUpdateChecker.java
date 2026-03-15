@@ -37,9 +37,7 @@ public class ModrinthUpdateChecker {
 
                 try {
                     String latestVersion = fetchLatestVersionWithRetry(urlString, 2);
-                    if (latestVersion == null) {
-                        return;
-                    }
+                    if (latestVersion == null) return;
 
                     if (!currentVersion.equalsIgnoreCase(latestVersion)) {
                         plugin.getLogger().info("A new version is available!");
@@ -60,16 +58,15 @@ public class ModrinthUpdateChecker {
             try {
                 return fetchLatestVersion(urlString);
             } catch (SocketTimeoutException timeout) {
-                plugin.getLogger().fine("[UpdateCheck] Modrinth request timed out (attempt " + (attempt + 1) + "/" + (retries + 1) + ")");
+                plugin.getLogger().fine("[UpdateCheck] Modrinth request timed out (attempt "
+                        + (attempt + 1) + "/" + (retries + 1) + ")");
                 last = timeout;
             } catch (IOException io) {
                 last = io;
                 String msg = io.getMessage() == null ? "" : io.getMessage().toLowerCase();
-
-                boolean looksTemporary = msg.contains("429") || msg.contains("503") || msg.contains("502") || msg.contains("504");
-                if (!looksTemporary) {
-                    throw io;
-                }
+                boolean looksTemporary = msg.contains("429") || msg.contains("503")
+                        || msg.contains("502") || msg.contains("504");
+                if (!looksTemporary) throw io;
             }
 
             if (attempt < retries) {
@@ -83,7 +80,8 @@ public class ModrinthUpdateChecker {
         }
 
         if (last != null) {
-            plugin.getLogger().fine("[UpdateCheck] Modrinth update check failed: " + last.getClass().getSimpleName() + " - " + last.getMessage());
+            plugin.getLogger().fine("[UpdateCheck] Modrinth update check failed: "
+                    + last.getClass().getSimpleName() + " - " + last.getMessage());
         }
         return null;
     }
@@ -93,29 +91,32 @@ public class ModrinthUpdateChecker {
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(8000);
         connection.setReadTimeout(10000);
-
-        // Modrinth: sinnvoller UA (Name/Version)
-        String ua = plugin.getName() + "/" + plugin.getDescription().getVersion();
-        connection.setRequestProperty("User-Agent", ua);
+        connection.setRequestProperty("User-Agent",
+                plugin.getName() + "/" + plugin.getDescription().getVersion());
         connection.setRequestProperty("Accept", "application/json");
 
         int code = connection.getResponseCode();
-        InputStream stream = (code >= 200 && code < 300) ? connection.getInputStream() : connection.getErrorStream();
 
-        if (code == 429) {
-            throw new IOException("429 Rate Limited");
-        }
+        if (code == 429) throw new IOException("429 Rate Limited");
+
+        InputStream stream = (code >= 200 && code < 300)
+                ? connection.getInputStream()
+                : connection.getErrorStream();
+
         if (code < 200 || code >= 300) {
             String err = readAll(stream);
             throw new IOException("HTTP " + code + " from Modrinth: " + (err == null ? "" : err));
         }
 
-        JsonElement parsed = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
+        JsonElement parsed = JsonParser.parseReader(
+                new InputStreamReader(stream, StandardCharsets.UTF_8));
         JsonArray versions = parsed.getAsJsonArray();
         if (versions.isEmpty()) return null;
 
         JsonObject latest = versions.get(0).getAsJsonObject();
-        return latest.has("version_number") ? latest.get("version_number").getAsString() : null;
+        return latest.has("version_number")
+                ? latest.get("version_number").getAsString()
+                : null;
     }
 
     private String readAll(InputStream in) {

@@ -3,24 +3,21 @@ package de.nikey.combatLog.Utils;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
-/**
- * Registers and exposes the custom {@code allow-combat-entry} WorldGuard flag.
- * Must be called from {@code onLoad()} before WorldGuard initialises its regions.
- */
-public class WorldGuardHook {
+public class WorldGuardHook implements WorldGuardBridge {
 
     public static StateFlag ALLOW_COMBAT_ENTRY;
     private static boolean enabled = false;
 
-    public static void tryRegisterFlag(Plugin plugin) {
-        if (Bukkit.getPluginManager().getPlugin("WorldGuard") == null) {
-            plugin.getLogger().info("WorldGuard not found – flag not registered.");
-            return;
-        }
+    private final Plugin plugin;
 
+    public WorldGuardHook(Plugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @Override
+    public void register() {
         try {
             FlagRegistry registry = WorldGuard.getInstance().getFlagRegistry();
             StateFlag flag = new StateFlag("allow-combat-entry", true);
@@ -33,8 +30,8 @@ public class WorldGuardHook {
         }
     }
 
-    public static boolean isWorldGuardEnabled() {
+    @Override
+    public boolean isEnabled() {
         return enabled;
     }
 }
-

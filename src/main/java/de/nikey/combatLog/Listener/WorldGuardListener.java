@@ -33,8 +33,6 @@ public class WorldGuardListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerMoveIntoRegion(PlayerMoveEvent event) {
-        if (event.getTo() == null) return;
-
         Player player = event.getPlayer();
         if (!combat.isInCombat(player)) return;
         if (!hasMovedBlock(event)) return;

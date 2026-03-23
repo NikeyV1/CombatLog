@@ -5,7 +5,7 @@ import de.nikey.combatLog.Config.PluginConfig;
 import de.nikey.combatLog.Listener.*;
 import de.nikey.combatLog.Utils.Metrics;
 import de.nikey.combatLog.Utils.ModrinthUpdateChecker;
-import de.nikey.combatLog.Utils.WorldGuardHook;
+import de.nikey.combatLog.Utils.WorldGuardBridge;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -13,12 +13,21 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class CombatLog extends JavaPlugin {
 
     private CombatManager combatManager;
+    private WorldGuardBridge worldGuardBridge = null;
 
     @Override
     public void onLoad() {
         if (Bukkit.getPluginManager().getPlugin("WorldGuard") != null) {
-            WorldGuardHook.tryRegisterFlag(this);
+            initWorldGuard();
         }
+    }
+
+    // Isolated – WorldGuardHook class only loaded when this method runs
+    private void initWorldGuard() {
+        de.nikey.combatLog.Utils.WorldGuardHook hook =
+                new de.nikey.combatLog.Utils.WorldGuardHook(this);
+        hook.register();
+        worldGuardBridge = hook;
     }
 
     @Override
@@ -39,8 +48,6 @@ public final class CombatLog extends JavaPlugin {
         combatManager.shutdown();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
     private void registerListeners(PluginConfig config) {
         PluginManager pm = Bukkit.getPluginManager();
 
@@ -50,12 +57,19 @@ public final class CombatLog extends JavaPlugin {
         pm.registerEvents(new CombatLogoutListener(combatManager, config), this);
         pm.registerEvents(new AntiKillAbuse(this), this);
 
-        if (WorldGuardHook.isWorldGuardEnabled()) {
-            pm.registerEvents(new WorldGuardListener(combatManager, config), this);
+        if (worldGuardBridge != null && worldGuardBridge.isEnabled()) {
+            registerWorldGuardListener(pm, config);
         }
     }
 
+    // Isolated – WorldGuardListener class only loaded when this method runs
+    private void registerWorldGuardListener(PluginManager pm, PluginConfig config) {
+        pm.registerEvents(
+                new de.nikey.combatLog.Listener.WorldGuardListener(combatManager, config), this);
+    }
+
     public static boolean isWorldGuardEnabled() {
-        return WorldGuardHook.isWorldGuardEnabled();
+        CombatLog instance = getPlugin(CombatLog.class);
+        return instance.worldGuardBridge != null && instance.worldGuardBridge.isEnabled();
     }
 }

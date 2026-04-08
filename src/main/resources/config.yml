@@ -44,7 +44,7 @@ combat-log:
   # Combat zone
   # =========================
   combat-zone:
-    enabled: true
+    enabled: false
     radius: 10
 
   # =========================

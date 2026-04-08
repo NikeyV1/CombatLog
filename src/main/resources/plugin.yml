@@ -6,3 +6,17 @@ authors: [ Nikey ]
 website: https://github.com/NikeyV1
 softdepend:
   - WorldGuard
+
+commands:
+  combatlog:
+    description: Main CombatLog command
+    usage: /<command> [reload]
+    permission: combatlog.use
+
+permissions:
+  combatlog.use:
+    description: Allows using CombatLog commands
+    default: op
+  combatlog.reload:
+    description: Allows reloading CombatLog config
+    default: op

@@ -10,8 +10,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -39,6 +41,21 @@ public class CombatManager {
 
     public boolean isInCombat(Player player) {
         return combatTimers.containsKey(player.getUniqueId());
+    }
+
+    /** Returns remaining seconds, or {@code null} if not in combat. */
+    public Integer getTimeLeft(Player player) {
+        return combatTimers.get(player.getUniqueId());
+    }
+
+    /** Returns max timer duration in seconds. */
+    public int getMaxTime() {
+        return config.timerDurationSeconds();
+    }
+
+    /** Returns an unmodifiable set of all players currently in combat. */
+    public Set<UUID> getAllInCombat() {
+        return Collections.unmodifiableSet(combatTimers.keySet());
     }
 
     /**

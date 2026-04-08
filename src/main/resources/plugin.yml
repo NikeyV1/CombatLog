@@ -10,7 +10,7 @@ softdepend:
 commands:
   combatlog:
     description: Main CombatLog command
-    usage: /<command> [reload]
+    usage: /<command> [reload|status|clear]
     permission: combatlog.use
 
 permissions:
@@ -19,4 +19,13 @@ permissions:
     default: op
   combatlog.reload:
     description: Allows reloading CombatLog config
+    default: op
+  combatlog.status:
+    description: Allows checking your own combat status
+    default: op
+  combatlog.status.others:
+    description: Allows checking other players' combat status
+    default: op
+  combatlog.clear:
+    description: Allows clearing combat tags
     default: op

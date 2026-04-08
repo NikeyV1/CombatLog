@@ -1,18 +1,14 @@
 package de.nikey.combatLog.Config;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.List;
 
 /**
- * Central access point for all config values.
+ * Central access point for all config values in config.yml.
  * Eliminates scattered getConfig() calls throughout listeners.
  */
 public class PluginConfig {
-
-    public static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
 
     private final FileConfiguration config;
 
@@ -98,15 +94,5 @@ public class PluginConfig {
 
     public List<String> blockedCommands() {
         return config.getStringList("combat-log.blocked-commands");
-    }
-
-    // ── Messages ──────────────────────────────────────────────────────────────
-
-    public Component message(String path, String def) {
-        return LEGACY.deserialize(rawMessage(path, def));
-    }
-
-    public String rawMessage(String path, String def) {
-        return config.getString(path, def);
     }
 }

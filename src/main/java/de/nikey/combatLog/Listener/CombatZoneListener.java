@@ -2,6 +2,7 @@ package de.nikey.combatLog.Listener;
 
 import de.nikey.combatLog.CombatLog;
 import de.nikey.combatLog.Combat.CombatManager;
+import de.nikey.combatLog.Config.MessagesConfig;
 import de.nikey.combatLog.Config.PluginConfig;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
@@ -19,11 +20,13 @@ public class CombatZoneListener implements Listener {
     private final CombatLog plugin;
     private final CombatManager combat;
     private final PluginConfig config;
+    private final MessagesConfig messages;
 
-    public CombatZoneListener(CombatLog plugin, CombatManager combat, PluginConfig config) {
+    public CombatZoneListener(CombatLog plugin, CombatManager combat, PluginConfig config, MessagesConfig messages) {
         this.plugin = plugin;
         this.combat = combat;
         this.config = config;
+        this.messages = messages;
     }
 
     @EventHandler(ignoreCancelled = true)

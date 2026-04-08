@@ -1,0 +1,35 @@
+combat-log:
+  combat-log: "&c{player} has combat logged!"
+  elytra-use-denied: "&dYou can't use elytra in combat"
+  teleporting-denied: "&dYou can't teleport in combat"
+  blocked-command: "&cYou can't use this command in combat"
+  riptide-denied: "&cYou can't use riptide in combat"
+
+  timer:
+    actionbar: "&c{timeLeft}/{maxTime}"
+    bossbar-title: "&cIn Combat: {timeLeft}s"
+
+commands:
+  no-permission: "&cYou don't have permission to use this command."
+  reload-success: "&aCombatLog config reloaded successfully!"
+  config-reloaded-by: "Config reloaded by {player}"
+  status:
+    not-online: "&e{player} &fis not currently online."
+    not-in-combat: "&e{player} &fis §anot in combat§f."
+    in-combat: "&e{player} &fis §cin combat§f — §e{timeLeft}s §fremaining (max: §e{maxTime}s§f)."
+  clear:
+    removed: "&aCombat tag removed from &e{player}&a."
+    notified: "&aYour combat tag has been removed by an admin."
+    not-in-combat: "&e{player} &fis not in combat."
+  player-not-found: "&cPlayer not found: {player}"
+  help:
+    header: "§e§m═══════════════════════════════════"
+    title: "§6⚔ §eCombatLog Commands"
+    status: "§f/combatlog status §7- Check your combat status"
+    status-other: "§f/combatlog status <player> §7- Check a player's status"
+    clear: "§f/combatlog clear <player> §7- Remove combat tag from player"
+    reload: "§f/combatlog reload §7- Reload configuration"
+    footer: "§e§m═══════════════════════════════════"
+  status-others-denied: "&cYou don't have permission to check other players' status."
+  status-usage: "&cUsage: /combatlog status <player>"
+  clear-usage: "&cUsage: /combatlog clear <player>"

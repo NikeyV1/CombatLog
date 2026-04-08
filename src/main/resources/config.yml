@@ -1,5 +1,11 @@
 combat-log:
   # =========================
+  # Colorizer
+  # =========================
+  colorizer:
+    serializer: LEGACY    # LEGACY | MINIMESSAGE
+
+  # =========================
   # Core settings
   # =========================
   timer:
@@ -46,20 +52,6 @@ combat-log:
   combat-zone:
     enabled: false
     radius: 10
-
-  # =========================
-  # Messages
-  # =========================
-  messages:
-    combat-log: "&c{player} has combat logged!"
-    elytra-use-denied: "&dYou can't use elytra in combat"
-    teleporting-denied: "&dYou can't teleport in combat"
-    blocked-command: "&cYou can't use this command in combat"
-    riptide-denied: "&cYou can't use riptide in combat"
-
-    timer:
-      actionbar: "&c{timeLeft}/{maxTime}"
-      bossbar-title: "&cIn Combat: {timeLeft}s"
 
 
 anti-kill-abuse:

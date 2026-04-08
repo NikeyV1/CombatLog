@@ -1,9 +1,11 @@
 package de.nikey.combatLog.Listener;
 
-import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
 import de.nikey.combatLog.CombatLog;
 import de.nikey.combatLog.Combat.CombatManager;
+import de.nikey.combatLog.Config.MessagesConfig;
 import de.nikey.combatLog.Config.PluginConfig;
+import com.destroystokyo.paper.event.player.PlayerElytraBoostEvent;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -25,13 +27,15 @@ public class CombatRestrictionListener implements Listener {
 
     private final CombatManager combat;
     private final PluginConfig config;
+    private final MessagesConfig messages;
 
     /** Tracks the last riptide-use timestamp per player for cooldown logic. */
     private final Map<UUID, Long> riptideCooldowns = new HashMap<>();
 
-    public CombatRestrictionListener(CombatManager combat, PluginConfig config) {
+    public CombatRestrictionListener(CombatManager combat, PluginConfig config, MessagesConfig messages) {
         this.combat = combat;
         this.config = config;
+        this.messages = messages;
     }
 
     // ── Elytra ────────────────────────────────────────────────────────────────
@@ -46,7 +50,7 @@ public class CombatRestrictionListener implements Listener {
         event.setCancelled(true);
         player.setGliding(false);
         applyDamage(player);
-        player.sendMessage(config.message("combat-log.messages.elytra-use-denied", "&dYou can't use elytra in combat"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', messages.colorizedMessage("combat-log.elytra-use-denied", "&dYou can't use elytra in combat")));
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -57,7 +61,7 @@ public class CombatRestrictionListener implements Listener {
 
         event.setCancelled(true);
         applyDamage(player);
-        player.sendMessage(config.message("combat-log.messages.elytra-use-denied", "&dYou can't use elytra in combat"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', messages.colorizedMessage("combat-log.elytra-use-denied", "&dYou can't use elytra in combat")));
     }
 
     // ── Teleport ──────────────────────────────────────────────────────────────
@@ -71,7 +75,7 @@ public class CombatRestrictionListener implements Listener {
 
         event.setCancelled(true);
         applyDamage(player);
-        player.sendMessage(config.message("combat-log.messages.teleporting-denied", "&dYou can't teleport in combat"));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', messages.colorizedMessage("combat-log.teleporting-denied", "&dYou can't teleport in combat")));
     }
 
     // ── Blocked commands ──────────────────────────────────────────────────────
@@ -91,7 +95,7 @@ public class CombatRestrictionListener implements Listener {
 
         if (isBlocked) {
             event.setCancelled(true);
-            player.sendMessage(config.message("combat-log.messages.blocked-command", "&cYou can't use this command in combat"));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', messages.colorizedMessage("combat-log.blocked-command", "&cYou can't use this command in combat")));
         }
     }
 
@@ -153,7 +157,7 @@ public class CombatRestrictionListener implements Listener {
             // Still on cooldown: block and punish
             event.setCancelled(true);
             applyDamage(player);
-            player.sendMessage(config.message("combat-log.messages.riptide-denied", "&cYou can't use riptide in combat"));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', messages.colorizedMessage("combat-log.riptide-denied", "&cYou can't use riptide in combat")));
         }
     }
 

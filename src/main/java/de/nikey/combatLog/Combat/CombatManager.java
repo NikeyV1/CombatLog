@@ -1,6 +1,8 @@
 package de.nikey.combatLog.Combat;
 
+import de.nikey.combatLog.Colorizer.ColorizerProvider;
 import de.nikey.combatLog.CombatLog;
+import de.nikey.combatLog.Config.MessagesConfig;
 import de.nikey.combatLog.Config.PluginConfig;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
@@ -24,6 +26,7 @@ public class CombatManager {
 
     private final CombatLog plugin;
     private final PluginConfig config;
+    private final MessagesConfig messages;
 
     /** Remaining seconds for each player in combat. */
     private final Map<UUID, Integer> combatTimers = new HashMap<>();
@@ -32,9 +35,10 @@ public class CombatManager {
     /** Active boss bars per player. */
     private final Map<UUID, BossBar> bossBars = new HashMap<>();
 
-    public CombatManager(CombatLog plugin, PluginConfig config) {
+    public CombatManager(CombatLog plugin, PluginConfig config, MessagesConfig messages) {
         this.plugin = plugin;
         this.config = config;
+        this.messages = messages;
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -149,17 +153,17 @@ public class CombatManager {
     private void updateDisplay(Player player, UUID id, String displayType, int timeLeft, int duration) {
         switch (displayType) {
             case "actionbar" -> {
-                String raw = config.rawMessage("combat-log.messages.timer.actionbar", "&c{timeLeft}/{maxTime}")
-                        .replace("{timeLeft}", String.valueOf(timeLeft))
-                        .replace("{maxTime}", String.valueOf(duration));
-                player.sendActionBar(PluginConfig.LEGACY.deserialize(raw));
+                String raw = messages.colorizedMessage("combat-log.timer.actionbar", "&c{timeLeft}/{maxTime}",
+                        "{timeLeft}", String.valueOf(timeLeft),
+                        "{maxTime}", String.valueOf(duration));
+                player.sendActionBar(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacyAmpersand().deserialize(raw));
             }
             case "bossbar" -> {
                 BossBar bar = bossBars.get(id);
                 if (bar == null) return;
-                String raw = config.rawMessage("combat-log.messages.timer.bossbar-title", "&cIn Combat: {timeLeft}s")
-                        .replace("{timeLeft}", String.valueOf(timeLeft));
-                bar.name(PluginConfig.LEGACY.deserialize(raw));
+                String raw = messages.colorizedMessage("combat-log.timer.bossbar-title", "&cIn Combat: {timeLeft}s",
+                        "{timeLeft}", String.valueOf(timeLeft));
+                bar.name(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacyAmpersand().deserialize(raw));
                 bar.progress((float) timeLeft / (float) duration);
             }
         }

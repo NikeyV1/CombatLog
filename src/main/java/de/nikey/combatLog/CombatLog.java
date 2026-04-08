@@ -6,7 +6,6 @@ import de.nikey.combatLog.Config.PluginConfig;
 import de.nikey.combatLog.Listener.*;
 import de.nikey.combatLog.Utils.Metrics;
 import de.nikey.combatLog.Utils.ModrinthUpdateChecker;
-import de.nikey.combatLog.Utils.WorldGuardBridge;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -79,20 +78,5 @@ public final class CombatLog extends JavaPlugin {
         pm.registerEvents(new CombatZoneListener(this, combatManager, config), this);
         pm.registerEvents(new CombatLogoutListener(combatManager, config), this);
         pm.registerEvents(new AntiKillAbuse(this), this);
-
-        if (worldGuardBridge != null && worldGuardBridge.isEnabled()) {
-            registerWorldGuardListener(pm, config);
-        }
-    }
-
-    // Isolated – WorldGuardListener class only loaded when this method runs
-    private void registerWorldGuardListener(PluginManager pm, PluginConfig config) {
-        pm.registerEvents(
-                new de.nikey.combatLog.Listener.WorldGuardListener(combatManager, config), this);
-    }
-
-    public static boolean isWorldGuardEnabled() {
-        CombatLog instance = getPlugin(CombatLog.class);
-        return instance.worldGuardBridge != null && instance.worldGuardBridge.isEnabled();
     }
 }

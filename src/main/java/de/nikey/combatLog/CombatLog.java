@@ -7,36 +7,13 @@ import de.nikey.combatLog.Listener.*;
 import de.nikey.combatLog.Utils.Metrics;
 import de.nikey.combatLog.Utils.ModrinthUpdateChecker;
 import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.ArrayList;
-import java.util.Collection;
 
 public final class CombatLog extends JavaPlugin {
 
     private CombatManager combatManager;
     private PluginConfig pluginConfig;
-    private WorldGuardBridge worldGuardBridge = null;
-
-    @Override
-    public void onLoad() {
-        if (Bukkit.getPluginManager().getPlugin("WorldGuard") != null) {
-            initWorldGuard();
-        }
-    }
-
-    // Isolated – WorldGuardHook class only loaded when this method runs
-    private void initWorldGuard() {
-        de.nikey.combatLog.Utils.WorldGuardHook hook =
-                new de.nikey.combatLog.Utils.WorldGuardHook(this);
-        hook.register();
-        worldGuardBridge = hook;
-    }
 
     @Override
     public void onEnable() {

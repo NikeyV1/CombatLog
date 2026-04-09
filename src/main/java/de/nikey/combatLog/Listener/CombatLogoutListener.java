@@ -30,7 +30,7 @@ public class CombatLogoutListener implements Listener {
         String message = config.rawMessage("combat-log.messages.combat-log", "&c{player} has combat logged!")
                 .replace("{player}", player.getName());
 
-        Bukkit.broadcast(PluginConfig.LEGACY.deserialize(message));
+        Bukkit.broadcast(config.colorize(message));
 
         if (config.killOnLogout()) {
             player.setHealth(0);

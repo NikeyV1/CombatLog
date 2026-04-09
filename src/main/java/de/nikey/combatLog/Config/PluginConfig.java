@@ -1,7 +1,8 @@
 package de.nikey.combatLog.Config;
 
+import de.nikey.combatLog.Utils.Color.Colorizer;
+import de.nikey.combatLog.Utils.Color.Impl.MiniMessageColorizer;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
  */
 public class PluginConfig {
 
-    public static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
+    private static final Colorizer COLORIZER = new MiniMessageColorizer();
 
     private final FileConfiguration config;
     private final FileConfiguration messages;
@@ -105,7 +106,11 @@ public class PluginConfig {
     // ── Messages ──────────────────────────────────────────────────────────────
 
     public Component message(String path, String def) {
-        return LEGACY.deserialize(rawMessage(path, def));
+        return COLORIZER.colorize(rawMessage(path, def));
+    }
+
+    public Component colorize(String rawMessage) {
+        return COLORIZER.colorize(rawMessage);
     }
 
     public String rawMessage(String path, String def) {

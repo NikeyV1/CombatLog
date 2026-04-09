@@ -134,14 +134,14 @@ public class CombatManager {
                 String raw = config.rawMessage("combat-log.messages.timer.actionbar", "&c{timeLeft}/{maxTime}")
                         .replace("{timeLeft}", String.valueOf(timeLeft))
                         .replace("{maxTime}", String.valueOf(duration));
-                player.sendActionBar(PluginConfig.LEGACY.deserialize(raw));
+                player.sendActionBar(config.colorize(raw));
             }
             case "bossbar" -> {
                 BossBar bar = bossBars.get(id);
                 if (bar == null) return;
                 String raw = config.rawMessage("combat-log.messages.timer.bossbar-title", "&cIn Combat: {timeLeft}s")
                         .replace("{timeLeft}", String.valueOf(timeLeft));
-                bar.name(PluginConfig.LEGACY.deserialize(raw));
+                bar.name(config.colorize(raw));
                 bar.progress((float) timeLeft / (float) duration);
             }
         }
@@ -165,9 +165,7 @@ public class CombatManager {
         if (isAfk) {
             player.showTitle(Title.title(
                     Component.empty(),
-                    PluginConfig.LEGACY.deserialize(
-                            config.rawMessage("combat-log.messages.afk-title", "&cPlease disable afk, you are in combat!")
-                    )
+                    config.message("combat-log.messages.afk-title", "&cPlease disable afk, you are in combat!")
             ));
         }
     }

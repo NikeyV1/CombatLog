@@ -4,7 +4,6 @@ import de.nikey.combatLog.CombatLog;
 import de.nikey.combatLog.Config.PluginConfig;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -166,7 +165,9 @@ public class CombatManager {
         if (isAfk) {
             player.showTitle(Title.title(
                     Component.empty(),
-                    Component.text("Please disable afk, you are in combat!").color(NamedTextColor.RED)
+                    PluginConfig.LEGACY.deserialize(
+                            config.rawMessage("combat-log.messages.afk-title", "&cPlease disable afk, you are in combat!")
+                    )
             ));
         }
     }

@@ -7,8 +7,12 @@ import de.nikey.combatLog.Utils.Metrics;
 import de.nikey.combatLog.Utils.ModrinthUpdateChecker;
 import de.nikey.combatLog.Utils.WorldGuardBridge;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
 
 public final class CombatLog extends JavaPlugin {
 
@@ -33,8 +37,12 @@ public final class CombatLog extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        saveResource("messages.yml", false);
 
-        PluginConfig pluginConfig = new PluginConfig(getConfig());
+        FileConfiguration messagesConfig = YamlConfiguration.loadConfiguration(
+                new File(getDataFolder(), "messages.yml")
+        );
+        PluginConfig pluginConfig = new PluginConfig(getConfig(), messagesConfig);
         combatManager = new CombatManager(this, pluginConfig);
 
         registerListeners(pluginConfig);

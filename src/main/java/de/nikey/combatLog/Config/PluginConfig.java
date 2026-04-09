@@ -15,9 +15,11 @@ public class PluginConfig {
     public static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
 
     private final FileConfiguration config;
+    private final FileConfiguration messages;
 
-    public PluginConfig(FileConfiguration config) {
+    public PluginConfig(FileConfiguration config, FileConfiguration messages) {
         this.config = config;
+        this.messages = messages;
     }
 
     // ── Timer ────────────────────────────────────────────────────────────────
@@ -107,6 +109,6 @@ public class PluginConfig {
     }
 
     public String rawMessage(String path, String def) {
-        return config.getString(path, def);
+        return messages.getString(path, def);
     }
 }

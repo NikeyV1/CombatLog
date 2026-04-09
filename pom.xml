@@ -6,7 +6,7 @@
 
     <groupId>de.nikey</groupId>
     <artifactId>CombatLog</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.15</version>
     <packaging>jar</packaging>
 
     <name>CombatLog</name>
@@ -40,7 +40,6 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <outputDirectory>C:\Users\NikeyV1\AppData\Roaming\.feather\player-server\servers\fe6d8fd1-e50c-4b19-80fd-8657a4e4597e\plugins</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
@@ -63,19 +62,9 @@
             <id>sonatype</id>
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>
-        <repository>
-            <id>sk89q-repo</id>
-            <url>https://maven.enginehub.org/repo/</url>
-        </repository>
     </repositories>
 
     <dependencies>
-        <dependency>
-            <groupId>com.sk89q.worldguard</groupId>
-            <artifactId>worldguard-bukkit</artifactId>
-            <version>7.0.13</version>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>

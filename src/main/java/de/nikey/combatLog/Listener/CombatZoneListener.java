@@ -2,13 +2,13 @@ package de.nikey.combatLog.Listener;
 
 import de.nikey.combatLog.CombatLog;
 import de.nikey.combatLog.Combat.CombatManager;
+import de.nikey.combatLog.Config.MessagesConfig;
 import de.nikey.combatLog.Config.PluginConfig;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Tags players in combat when they are near other players on join.
@@ -19,11 +19,13 @@ public class CombatZoneListener implements Listener {
     private final CombatLog plugin;
     private final CombatManager combat;
     private final PluginConfig config;
+    private final MessagesConfig messages;
 
-    public CombatZoneListener(CombatLog plugin, CombatManager combat, PluginConfig config) {
+    public CombatZoneListener(CombatLog plugin, CombatManager combat, PluginConfig config, MessagesConfig messages) {
         this.plugin = plugin;
         this.combat = combat;
         this.config = config;
+        this.messages = messages;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -32,26 +34,21 @@ public class CombatZoneListener implements Listener {
 
         Player player = event.getPlayer();
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!player.isOnline()) {
-                    cancel();
-                    return;
-                }
-                if (isExempt(player)) return;
+        // Single delayed check — give the player time to fully spawn
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline() || isExempt(player)) return;
 
-                double radius = config.combatZoneRadius();
+            double radius = config.combatZoneRadius();
 
-                for (Player nearby : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
-                    if (nearby == player) continue;
-                    if (nearby.isDead()) continue;
-                    if (isExempt(nearby)) continue;
+            for (Player nearby : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
+                if (nearby == player) continue;
+                if (nearby.isDead()) continue;
+                if (isExempt(nearby)) continue;
 
-                    combat.tagBoth(player, nearby);
-                }
+                // Tag both players only once
+                combat.tagBoth(player, nearby);
             }
-        }.runTaskTimer(plugin, 0L, 20L);
+        }, 20L);
     }
 
     private boolean isExempt(Player player) {

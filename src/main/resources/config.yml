@@ -47,6 +47,9 @@ combat-log:
     enabled: false
     radius: 10
 
+messages:
+  language: en
+
 anti-kill-abuse:
   enabled: true
 

@@ -15,6 +15,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.Locale;
 import java.util.Objects;
 
 public final class CombatLog extends JavaPlugin {
@@ -41,7 +42,7 @@ public final class CombatLog extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        ensureMessagesFileExists();
+        ensureMessageResourcesExist();
 
         FileConfiguration messagesConfig = loadMessagesConfig();
         pluginConfig = new PluginConfig(getConfig(), messagesConfig);
@@ -105,14 +106,30 @@ public final class CombatLog extends JavaPlugin {
     }
 
     private FileConfiguration loadMessagesConfig() {
-        ensureMessagesFileExists();
-        return YamlConfiguration.loadConfiguration(new File(getDataFolder(), "messages.yml"));
+        ensureMessageResourcesExist();
+
+        String language = getConfig().getString("messages.language", "en").toLowerCase(Locale.ROOT);
+        File localizedFile = new File(getDataFolder(), "messages-" + language + ".yml");
+
+        if (!localizedFile.exists()) {
+            if (!"en".equals(language)) {
+                getLogger().warning("Missing messages file for language '" + language + "', falling back to messages-en.yml");
+            }
+            localizedFile = new File(getDataFolder(), "messages-en.yml");
+        }
+
+        return YamlConfiguration.loadConfiguration(localizedFile);
     }
 
-    private void ensureMessagesFileExists() {
-        File messagesFile = new File(getDataFolder(), "messages.yml");
+    private void ensureMessageResourcesExist() {
+        saveMessageResourceIfMissing("messages-en.yml");
+        saveMessageResourceIfMissing("messages-ru.yml");
+    }
+
+    private void saveMessageResourceIfMissing(String resourceName) {
+        File messagesFile = new File(getDataFolder(), resourceName);
         if (!messagesFile.exists()) {
-            saveResource("messages.yml", false);
+            saveResource(resourceName, false);
         }
     }
 }

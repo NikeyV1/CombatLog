@@ -1,0 +1,43 @@
+combat-log:
+  messages:
+    combat-log: "&c{player} вышел во время боя!"
+    elytra-use-denied: "&dНельзя использовать элитры в бою"
+    teleporting-denied: "&dНельзя телепортироваться в бою"
+    blocked-command: "&cЭту команду нельзя использовать в бою"
+    region-entry-denied: "&cНельзя входить в этот регион в бою"
+    riptide-denied: "&cНельзя использовать тягу в бою"
+    afk-title: "&cВыключи AFK, ты в бою!"
+
+    timer:
+      actionbar: "&c{timeLeft}/{maxTime}"
+      bossbar-title: "&cВ бою: {timeLeft}с"
+
+commands:
+  combatlog:
+    no-permission: "<red>У вас нет прав на использование этой команды."
+    usage-header: "<yellow>Использование:"
+    usages:
+      reload: "<gray>/{label} reload"
+      status: "<gray>/{label} status <player>"
+      untag: "<gray>/{label} untag <player>"
+    reload:
+      success: "<green>Конфиг и сообщения CombatLog перезагружены."
+      failed: "<red>Не удалось перезагрузить CombatLog. Подробности в консоли."
+    errors:
+      player-not-found: "<red>Игрок не найден: <white>{player}"
+    untag:
+      success: "<green>Боевой тег снят с <white>{player}"
+      not-in-combat: "<yellow>Игрок <white>{player} <yellow>не находится в бою."
+    status:
+      title: "<gold>Статус боя для <white>{player}"
+      world: "<gray>Мир: <white>{world}"
+      gamemode: "<gray>Режим: <white>{gamemode}"
+      in-combat: "<gray>В бою: <white>{value}"
+      time-left: "<gray>Осталось времени: <white>{value}"
+      ignored-world: "<gray>Игнорируемый мир: <white>{value}"
+      combat-zone-enabled: "<gray>Combat zone включен: <white>{value}"
+      worldguard-active: "<gray>WorldGuard активен: <white>{value}"
+    values:
+      yes: "да"
+      no: "нет"
+      not-applicable: "н/д"

@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class UntagSubcommand implements Subcommand {
 
@@ -30,13 +31,21 @@ public class UntagSubcommand implements Subcommand {
     @Override
     public boolean execute(CommandSender sender, String label, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(plugin.getPluginConfig().colorize("<yellow>Usage: /" + label + " untag <player>"));
+            sender.sendMessage(plugin.getPluginConfig().message(
+                    "commands.combatlog.usages.untag",
+                    "<gray>/{label} untag <player>",
+                    Map.of("label", label)
+            ));
             return true;
         }
 
         Player target = Bukkit.getPlayerExact(args[1]);
         if (target == null) {
-            sender.sendMessage(plugin.getPluginConfig().colorize("<red>Player not found: <white>" + args[1]));
+            sender.sendMessage(plugin.getPluginConfig().message(
+                    "commands.combatlog.errors.player-not-found",
+                    "<red>Player not found: <white>{player}",
+                    Map.of("player", args[1])
+            ));
             return true;
         }
 
@@ -45,9 +54,17 @@ public class UntagSubcommand implements Subcommand {
         combatManager.untag(target);
 
         if (wasInCombat) {
-            sender.sendMessage(plugin.getPluginConfig().colorize("<green>Removed combat tag from <white>" + target.getName()));
+            sender.sendMessage(plugin.getPluginConfig().message(
+                    "commands.combatlog.untag.success",
+                    "<green>Removed combat tag from <white>{player}",
+                    Map.of("player", target.getName())
+            ));
         } else {
-            sender.sendMessage(plugin.getPluginConfig().colorize("<yellow>Player <white>" + target.getName() + " <yellow>was not in combat."));
+            sender.sendMessage(plugin.getPluginConfig().message(
+                    "commands.combatlog.untag.not-in-combat",
+                    "<yellow>Player <white>{player} <yellow>was not in combat.",
+                    Map.of("player", target.getName())
+            ));
         }
         return true;
     }

@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class StatusSubcommand implements Subcommand {
 
@@ -30,27 +31,70 @@ public class StatusSubcommand implements Subcommand {
     @Override
     public boolean execute(CommandSender sender, String label, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(plugin.getPluginConfig().colorize("<yellow>Usage: /" + label + " status <player>"));
+            sender.sendMessage(plugin.getPluginConfig().message(
+                    "commands.combatlog.usages.status",
+                    "<gray>/{label} status <player>",
+                    Map.of("label", label)
+            ));
             return true;
         }
 
         Player target = Bukkit.getPlayerExact(args[1]);
         if (target == null) {
-            sender.sendMessage(plugin.getPluginConfig().colorize("<red>Player not found: <white>" + args[1]));
+            sender.sendMessage(plugin.getPluginConfig().message(
+                    "commands.combatlog.errors.player-not-found",
+                    "<red>Player not found: <white>{player}",
+                    Map.of("player", args[1])
+            ));
             return true;
         }
 
         PluginConfig config = plugin.getPluginConfig();
         Integer timeLeft = plugin.getCombatManager().getRemainingCombatSeconds(target).orElse(-1);
+        String yes = config.rawMessage("commands.combatlog.values.yes", "yes");
+        String no = config.rawMessage("commands.combatlog.values.no", "no");
+        String notApplicable = config.rawMessage("commands.combatlog.values.not-applicable", "n/a");
 
-        sender.sendMessage(config.colorize("<gold>Combat status for <white>" + target.getName()));
-        sender.sendMessage(config.colorize("<gray>World: <white>" + target.getWorld().getName()));
-        sender.sendMessage(config.colorize("<gray>Gamemode: <white>" + target.getGameMode().name()));
-        sender.sendMessage(config.colorize("<gray>In combat: <white>" + yesNo(plugin.getCombatManager().isInCombat(target))));
-        sender.sendMessage(config.colorize("<gray>Time left: <white>" + formatTime(timeLeft)));
-        sender.sendMessage(config.colorize("<gray>Ignored world: <white>" + yesNo(config.isIgnoredWorld(target.getWorld().getName()))));
-        sender.sendMessage(config.colorize("<gray>Combat zone enabled: <white>" + yesNo(config.combatZoneEnabled())));
-        sender.sendMessage(config.colorize("<gray>WorldGuard active: <white>" + yesNo(CombatLog.isWorldGuardEnabled())));
+        sender.sendMessage(config.message(
+                "commands.combatlog.status.title",
+                "<gold>Combat status for <white>{player}",
+                Map.of("player", target.getName())
+        ));
+        sender.sendMessage(config.message(
+                "commands.combatlog.status.world",
+                "<gray>World: <white>{world}",
+                Map.of("world", target.getWorld().getName())
+        ));
+        sender.sendMessage(config.message(
+                "commands.combatlog.status.gamemode",
+                "<gray>Gamemode: <white>{gamemode}",
+                Map.of("gamemode", target.getGameMode().name())
+        ));
+        sender.sendMessage(config.message(
+                "commands.combatlog.status.in-combat",
+                "<gray>In combat: <white>{value}",
+                Map.of("value", yesNo(plugin.getCombatManager().isInCombat(target), yes, no))
+        ));
+        sender.sendMessage(config.message(
+                "commands.combatlog.status.time-left",
+                "<gray>Time left: <white>{value}",
+                Map.of("value", formatTime(timeLeft, notApplicable))
+        ));
+        sender.sendMessage(config.message(
+                "commands.combatlog.status.ignored-world",
+                "<gray>Ignored world: <white>{value}",
+                Map.of("value", yesNo(config.isIgnoredWorld(target.getWorld().getName()), yes, no))
+        ));
+        sender.sendMessage(config.message(
+                "commands.combatlog.status.combat-zone-enabled",
+                "<gray>Combat zone enabled: <white>{value}",
+                Map.of("value", yesNo(config.combatZoneEnabled(), yes, no))
+        ));
+        sender.sendMessage(config.message(
+                "commands.combatlog.status.worldguard-active",
+                "<gray>WorldGuard active: <white>{value}",
+                Map.of("value", yesNo(CombatLog.isWorldGuardEnabled(), yes, no))
+        ));
         return true;
     }
 
@@ -67,11 +111,11 @@ public class StatusSubcommand implements Subcommand {
                 .toList();
     }
 
-    private String formatTime(int timeLeftSeconds) {
-        return timeLeftSeconds < 0 ? "n/a" : timeLeftSeconds + "s";
+    private String formatTime(int timeLeftSeconds, String notApplicable) {
+        return timeLeftSeconds < 0 ? notApplicable : timeLeftSeconds + "s";
     }
 
-    private String yesNo(boolean value) {
-        return value ? "yes" : "no";
+    private String yesNo(boolean value, String yes, String no) {
+        return value ? yes : no;
     }
 }

@@ -5,6 +5,8 @@ import de.nikey.combatLog.Utils.Color.Impl.MiniMessageColorizer;
 import net.kyori.adventure.text.Component;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.util.Map;
+
 import java.util.List;
 
 /**
@@ -114,11 +116,23 @@ public class PluginConfig {
         return COLORIZER.colorize(rawMessage(path, def));
     }
 
+    public Component message(String path, String def, Map<String, String> placeholders) {
+        return COLORIZER.colorize(rawMessage(path, def, placeholders));
+    }
+
     public Component colorize(String rawMessage) {
         return COLORIZER.colorize(rawMessage);
     }
 
     public String rawMessage(String path, String def) {
         return messages.getString(path, def);
+    }
+
+    public String rawMessage(String path, String def, Map<String, String> placeholders) {
+        String message = rawMessage(path, def);
+        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+            message = message.replace("{" + entry.getKey() + "}", entry.getValue());
+        }
+        return message;
     }
 }

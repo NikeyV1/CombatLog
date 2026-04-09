@@ -34,7 +34,10 @@ public class CombatLogCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("combatlog.admin")) {
-            sender.sendMessage(plugin.getPluginConfig().colorize("<red>You do not have permission to use this command."));
+            sender.sendMessage(plugin.getPluginConfig().message(
+                    "commands.combatlog.no-permission",
+                    "<red>You do not have permission to use this command."
+            ));
             return true;
         }
 
@@ -53,10 +56,27 @@ public class CombatLogCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendUsage(CommandSender sender, String label) {
-        sender.sendMessage(plugin.getPluginConfig().colorize("<yellow>Usage:"));
-        for (Subcommand subcommand : subcommands.values()) {
-            sender.sendMessage(plugin.getPluginConfig().colorize("<gray>/" + label + " " + subcommand.usage()));
-        }
+        Map<String, String> placeholders = Map.of("label", label);
+
+        sender.sendMessage(plugin.getPluginConfig().message(
+                "commands.combatlog.usage-header",
+                "<yellow>Usage:"
+        ));
+        sender.sendMessage(plugin.getPluginConfig().message(
+                "commands.combatlog.usages.reload",
+                "<gray>/{label} reload",
+                placeholders
+        ));
+        sender.sendMessage(plugin.getPluginConfig().message(
+                "commands.combatlog.usages.status",
+                "<gray>/{label} status <player>",
+                placeholders
+        ));
+        sender.sendMessage(plugin.getPluginConfig().message(
+                "commands.combatlog.usages.untag",
+                "<gray>/{label} untag <player>",
+                placeholders
+        ));
     }
 
     @Override

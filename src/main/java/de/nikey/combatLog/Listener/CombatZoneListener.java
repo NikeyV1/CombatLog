@@ -36,7 +36,6 @@ public class CombatZoneListener implements Listener {
             @Override
             public void run() {
                 if (!player.isOnline()) {
-                    cancel();
                     return;
                 }
                 if (isExempt(player)) return;
@@ -51,7 +50,7 @@ public class CombatZoneListener implements Listener {
                     combat.tagBoth(player, nearby);
                 }
             }
-        }.runTaskTimer(plugin, 0L, 20L);
+        }.runTaskLater(plugin, 20L);
     }
 
     private boolean isExempt(Player player) {

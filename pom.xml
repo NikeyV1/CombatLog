@@ -6,7 +6,7 @@
 
     <groupId>de.nikey</groupId>
     <artifactId>CombatLog</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.15-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>CombatLog</name>
@@ -40,7 +40,6 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <outputDirectory>C:\Users\NikeyV1\AppData\Roaming\.feather\player-server\servers\fe6d8fd1-e50c-4b19-80fd-8657a4e4597e\plugins</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>

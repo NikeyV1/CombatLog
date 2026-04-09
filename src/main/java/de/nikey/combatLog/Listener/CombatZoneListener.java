@@ -9,7 +9,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Tags players in combat when they are near other players on join.
@@ -35,26 +34,21 @@ public class CombatZoneListener implements Listener {
 
         Player player = event.getPlayer();
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!player.isOnline()) {
-                    cancel();
-                    return;
-                }
-                if (isExempt(player)) return;
+        // Single delayed check — give the player time to fully spawn
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline() || isExempt(player)) return;
 
-                double radius = config.combatZoneRadius();
+            double radius = config.combatZoneRadius();
 
-                for (Player nearby : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
-                    if (nearby == player) continue;
-                    if (nearby.isDead()) continue;
-                    if (isExempt(nearby)) continue;
+            for (Player nearby : player.getWorld().getNearbyPlayers(player.getLocation(), radius)) {
+                if (nearby == player) continue;
+                if (nearby.isDead()) continue;
+                if (isExempt(nearby)) continue;
 
-                    combat.tagBoth(player, nearby);
-                }
+                // Tag both players only once
+                combat.tagBoth(player, nearby);
             }
-        }.runTaskTimer(plugin, 0L, 20L);
+        }, 20L);
     }
 
     private boolean isExempt(Player player) {

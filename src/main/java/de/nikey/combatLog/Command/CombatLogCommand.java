@@ -22,11 +22,16 @@ public class CombatLogCommand implements CommandExecutor, TabCompleter {
 
     private final JavaPlugin plugin;
     private final CombatManager combat;
-    private final MessagesConfig messages;
+    private MessagesConfig messages;
 
     public CombatLogCommand(JavaPlugin plugin, CombatManager combat, MessagesConfig messages) {
         this.plugin = plugin;
         this.combat = combat;
+        this.messages = messages;
+    }
+
+    /** Updates the messages config reference (called on reload). */
+    public void setMessagesConfig(MessagesConfig messages) {
         this.messages = messages;
     }
 
@@ -99,28 +104,8 @@ public class CombatLogCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        plugin.reloadConfig();
-
-        // Preserve existing combat state
-        List<Player> inCombat = new ArrayList<>();
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            if (combat.isInCombat(p)) {
-                inCombat.add(p);
-            }
-        }
-
-        combat.shutdown();
-
-        // Re-create listeners via the main plugin class
         de.nikey.combatLog.CombatLog main = (de.nikey.combatLog.CombatLog) plugin;
         main.reloadListeners();
-
-        // Restore combat tags
-        for (Player p : inCombat) {
-            if (p.isOnline()) {
-                combat.tag(p);
-            }
-        }
 
         sender.sendMessage(colorize("commands.reload-success", "&aCombatLog config reloaded successfully!"));
         plugin.getLogger().info(colorize("commands.config-reloaded-by", "Config reloaded by {player}",

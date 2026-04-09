@@ -6,3 +6,12 @@ authors: [ Nikey ]
 website: https://github.com/NikeyV1
 softdepend:
   - WorldGuard
+commands:
+  combatlog:
+    description: CombatLog admin command
+    usage: /combatlog <reload|status <player>|untag <player>>
+    permission: combatlog.admin
+permissions:
+  combatlog.admin:
+    description: Access to CombatLog admin commands
+    default: op

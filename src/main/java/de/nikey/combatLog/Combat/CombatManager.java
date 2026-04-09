@@ -11,6 +11,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.UUID;
 
 /**
@@ -84,6 +85,15 @@ public class CombatManager {
         combatTimers.clear();
         bossBars.forEach((id, bar) -> Bukkit.getOnlinePlayers().forEach(bar::removeViewer));
         bossBars.clear();
+    }
+
+    public int activeCombatCount() {
+        return combatTimers.size();
+    }
+
+    public OptionalInt getRemainingCombatSeconds(Player player) {
+        Integer timeLeft = combatTimers.get(player.getUniqueId());
+        return timeLeft == null ? OptionalInt.empty() : OptionalInt.of(timeLeft);
     }
 
     // ── Internal ──────────────────────────────────────────────────────────────

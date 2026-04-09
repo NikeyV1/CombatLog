@@ -15,10 +15,15 @@ public class PluginConfig {
 
     private static final Colorizer COLORIZER = new MiniMessageColorizer();
 
-    private final FileConfiguration config;
-    private final FileConfiguration messages;
+    private FileConfiguration config;
+    private FileConfiguration messages;
 
     public PluginConfig(FileConfiguration config, FileConfiguration messages) {
+        this.config = config;
+        this.messages = messages;
+    }
+
+    public void reload(FileConfiguration config, FileConfiguration messages) {
         this.config = config;
         this.messages = messages;
     }

@@ -1,6 +1,5 @@
 package de.nikey.combatLog.Listener;
 
-
 import de.nikey.combatLog.Combat.CombatManager;
 import de.nikey.combatLog.Config.PluginConfig;
 import org.bukkit.Material;
@@ -15,9 +14,8 @@ import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.projectiles.ProjectileSource;
 
 /**
- * Handles all events that trigger combat tagging:
- * direct hits, projectiles (arrow / trident / wither skull),
- * explosions (end crystal, respawn anchor, block), and ender pearls.
+ * Handles all events that trigger combat tagging.
+ * Players with {@code combatlog.bypass} are never tagged.
  */
 public class CombatTagListener implements Listener {
 
@@ -35,30 +33,21 @@ public class CombatTagListener implements Listener {
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         if (config.isIgnoredWorld(event.getEntity().getWorld().getName())) return;
         if (!(event.getEntity() instanceof Player damaged)) return;
+        if (damaged.hasPermission("combatlog.bypass")) return;
 
         Player damager = resolveAttacker(event.getDamager());
         if (damager == null || damager == damaged) return;
+        if (damager.hasPermission("combatlog.bypass")) return;
 
         combat.tagBoth(damaged, damager);
     }
 
-    /**
-     * Resolves the actual player attacker from a direct hit or supported projectile.
-     * Returns {@code null} when the source is not a player or projectile type is unsupported.
-     */
     private Player resolveAttacker(Entity damagerEntity) {
-        if (damagerEntity instanceof Player p) return p;
-
-        if (damagerEntity instanceof Arrow arrow)        return shooterAsPlayer(arrow.getShooter());
+        if (damagerEntity instanceof Player p)          return p;
+        if (damagerEntity instanceof Arrow arrow)       return shooterAsPlayer(arrow.getShooter());
         if (damagerEntity instanceof Trident trident)   return shooterAsPlayer(trident.getShooter());
         if (damagerEntity instanceof WitherSkull skull) return shooterAsPlayer(skull.getShooter());
-
-        // EnderCrystal handled separately in onEntityDamageByEntity is not needed;
-        // crystal explosions arrive as EntityDamageByEntityEvent with EnderCrystal as damager.
-        if (damagerEntity instanceof EnderCrystal) {
-            return null; // tagged via tagSingleIfExplosions below
-        }
-
+        if (damagerEntity instanceof EnderCrystal)      return null;
         return null;
     }
 
@@ -67,7 +56,6 @@ public class CombatTagListener implements Listener {
     }
 
     // ── Explosion-only: EnderCrystal ──────────────────────────────────────────
-    // (Re-checked after resolveAttacker returns null for crystals)
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void onCrystalExplosion(EntityDamageByEntityEvent event) {
@@ -75,6 +63,7 @@ public class CombatTagListener implements Listener {
         if (config.isIgnoredWorld(event.getEntity().getWorld().getName())) return;
         if (!(event.getDamager() instanceof EnderCrystal)) return;
         if (!(event.getEntity() instanceof Player damaged)) return;
+        if (damaged.hasPermission("combatlog.bypass")) return;
 
         combat.untag(damaged);
         combat.tag(damaged);
@@ -88,6 +77,7 @@ public class CombatTagListener implements Listener {
         if (!config.explosionsSetCombat()) return;
         if (config.isIgnoredWorld(event.getEntity().getWorld().getName())) return;
         if (!(event.getEntity() instanceof Player damaged)) return;
+        if (damaged.hasPermission("combatlog.bypass")) return;
 
         boolean isBlockExplosion = event.getCause() == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION;
         boolean isRespawnAnchor  = event.getDamager() != null
@@ -108,6 +98,7 @@ public class CombatTagListener implements Listener {
         if (!(pearl.getShooter() instanceof Player player)) return;
         if (config.isIgnoredWorld(player.getWorld().getName())) return;
         if (!config.enderpearlSetCombatOnLand()) return;
+        if (player.hasPermission("combatlog.bypass")) return;
         if (config.enderpearlOnlyIfAlreadyInCombat() && !combat.isInCombat(player)) return;
 
         combat.untag(player);

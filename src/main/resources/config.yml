@@ -10,12 +10,12 @@ combat-log:
     elytra:
       disabled-in-combat: true
     teleporting:
-      disabled-in-combat: false          # Disable any teleport while in combat
+      disabled-in-combat: false          # Disable any teleport while in combat (includes Chorus Fruit)
     mending:
       disabled-in-combat: true
     riptide:
       stop: false
-      cooldown: 10000                    # riptide cooldown (sec * 100)
+      cooldown: 10000                    # riptide cooldown (ms)
     explosions:
       set-combat-on-explosion: true      # End crystals + block explosions set combat
 
@@ -30,6 +30,22 @@ combat-log:
     enderpearl:
       set-combat-on-land: true           # Pearl on land triggers combat
       only-if-already-in-combat: false   # If false: pearl can start combat
+
+  # =========================
+  # Potion effects on combat tag
+  # Applied when a player first enters combat, removed when combat ends.
+  # Players who already have the effect are not affected.
+  # Effect types: https://jd.papermc.io/paper/1.21/org/bukkit/potion/PotionEffectType.html
+  # =========================
+  tag-effects:
+    - type: GLOWING              # Makes the player glow (visible through walls)
+      duration-seconds: 15
+      amplifier: 0
+      show-particles: false
+    # - type: SLOWNESS
+    #   duration-seconds: 15
+    #   amplifier: 0
+    #   show-particles: true
 
   # =========================
   # Exclusions / blocks

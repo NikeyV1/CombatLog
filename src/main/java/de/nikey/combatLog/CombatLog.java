@@ -3,6 +3,7 @@ package de.nikey.combatLog;
 import de.nikey.combatLog.Combat.CombatManager;
 import de.nikey.combatLog.Config.PluginConfig;
 import de.nikey.combatLog.Listener.*;
+import de.nikey.combatLog.Utils.CombatPlaceholders;
 import de.nikey.combatLog.Utils.Metrics;
 import de.nikey.combatLog.Utils.ModrinthUpdateChecker;
 import de.nikey.combatLog.Utils.WorldGuardBridge;
@@ -22,7 +23,6 @@ public final class CombatLog extends JavaPlugin {
         }
     }
 
-    // Isolated – WorldGuardHook class only loaded when this method runs
     private void initWorldGuard() {
         de.nikey.combatLog.Utils.WorldGuardHook hook =
                 new de.nikey.combatLog.Utils.WorldGuardHook(this);
@@ -38,6 +38,7 @@ public final class CombatLog extends JavaPlugin {
         combatManager = new CombatManager(this, pluginConfig);
 
         registerListeners(pluginConfig);
+        registerPlaceholders();
 
         new ModrinthUpdateChecker("LI8sodAD").checkForUpdates();
         new Metrics(this, 28071);
@@ -62,10 +63,24 @@ public final class CombatLog extends JavaPlugin {
         }
     }
 
-    // Isolated – WorldGuardListener class only loaded when this method runs
     private void registerWorldGuardListener(PluginManager pm, PluginConfig config) {
         pm.registerEvents(
                 new de.nikey.combatLog.Listener.WorldGuardListener(combatManager, config), this);
+    }
+
+    /**
+     * Registers the PlaceholderAPI expansion only if PAPI is present.
+     * Isolated into its own method so CombatPlaceholders (and PlaceholderExpansion)
+     * are never loaded when PAPI is absent — same pattern as WorldGuard.
+     */
+    private void registerPlaceholders() {
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") == null) return;
+        initPlaceholders();
+    }
+
+    private void initPlaceholders() {
+        new CombatPlaceholders(combatManager).register();
+        getLogger().info("PlaceholderAPI detected: placeholders registered.");
     }
 
     public static boolean isWorldGuardEnabled() {

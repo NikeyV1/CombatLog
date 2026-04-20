@@ -7,16 +7,22 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Owns all combat state (timers, boss bars) and exposes a clean API
- * for tagging/untagging players. Listeners never touch the maps directly.
+ * Owns all combat state (timers, boss bars, opponents, effects) and exposes a
+ * clean API for tagging/untagging players. Listeners never touch the maps directly.
  */
 public class CombatManager {
 
@@ -29,6 +35,10 @@ public class CombatManager {
     private final Map<UUID, BukkitRunnable> activeTimers = new HashMap<>();
     /** Active boss bars per player. */
     private final Map<UUID, BossBar> bossBars = new HashMap<>();
+    /** Most recent opponent per player — used by PlaceholderAPI. */
+    private final Map<UUID, UUID> opponents = new HashMap<>();
+    /** Potion effect types applied by CombatLog — removed on untag. */
+    private final Map<UUID, List<PotionEffectType>> appliedEffects = new HashMap<>();
 
     public CombatManager(CombatLog plugin, PluginConfig config) {
         this.plugin = plugin;
@@ -41,11 +51,34 @@ public class CombatManager {
         return combatTimers.containsKey(player.getUniqueId());
     }
 
+    /** Returns the remaining combat seconds, or 0 if not in combat. */
+    public int getTimeLeft(Player player) {
+        return combatTimers.getOrDefault(player.getUniqueId(), 0);
+    }
+
     /**
-     * Tags one player into combat. Refreshes the timer if already tagged.
-     * Stops gliding if elytra is disabled in combat.
+     * Returns the most recent opponent of a tagged player, or {@code null} if
+     * the opponent is offline, unknown, or the player is not in combat.
+     */
+    public Player getOpponent(Player player) {
+        UUID oppId = opponents.get(player.getUniqueId());
+        if (oppId == null) return null;
+        return Bukkit.getPlayer(oppId);
+    }
+
+    /**
+     * Tags a player into combat without a known opponent.
+     * Refreshes the timer if already tagged.
      */
     public void tag(Player player) {
+        tag(player, null);
+    }
+
+    /**
+     * Tags a player into combat and records their opponent.
+     * Refreshes timer and updates opponent on subsequent calls.
+     */
+    public void tag(Player player, Player opponent) {
         if (config.elytraDisabledInCombat()) {
             player.setGliding(false);
         }
@@ -53,38 +86,46 @@ public class CombatManager {
         UUID id = player.getUniqueId();
         int duration = config.timerDurationSeconds();
 
+        if (opponent != null) {
+            opponents.put(id, opponent.getUniqueId());
+        }
+
         if (combatTimers.containsKey(id)) {
             combatTimers.put(id, duration); // refresh
             return;
         }
 
+        // First tag only
         notifyAfkIfNeeded(player);
+        applyTagEffects(player);
         combatTimers.put(id, duration);
         scheduleTimerTask(player, duration);
     }
 
     /**
-     * Convenience: untag both, then tag both, and stop gliding.
+     * Untags both players, then tags both with each other as opponent.
      */
     public void tagBoth(Player a, Player b) {
         untag(a);
         untag(b);
-        tag(a);
-        tag(b);
+        tag(a, b);
+        tag(b, a);
     }
 
-    /** Removes a player from combat and cancels their timer/bossbar. */
+    /** Removes a player from combat and cleans up all associated state. */
     public void untag(Player player) {
         cleanup(player.getUniqueId());
     }
 
-    /** Called on plugin shutdown – cancels all running tasks cleanly. */
+    /** Called on plugin shutdown — cancels all running tasks cleanly. */
     public void shutdown() {
         activeTimers.values().forEach(BukkitRunnable::cancel);
         activeTimers.clear();
         combatTimers.clear();
         bossBars.forEach((id, bar) -> Bukkit.getOnlinePlayers().forEach(bar::removeViewer));
         bossBars.clear();
+        opponents.clear();
+        appliedEffects.clear();
     }
 
     // ── Internal ──────────────────────────────────────────────────────────────
@@ -150,12 +191,45 @@ public class CombatManager {
 
     private void cleanup(UUID id) {
         combatTimers.remove(id);
+        opponents.remove(id);
 
         BukkitRunnable task = activeTimers.remove(id);
         if (task != null) task.cancel();
 
         BossBar bar = bossBars.remove(id);
         if (bar != null) Bukkit.getOnlinePlayers().forEach(bar::removeViewer);
+
+        // Only remove effects that CombatLog itself applied
+        Player player = Bukkit.getPlayer(id);
+        List<PotionEffectType> applied = appliedEffects.remove(id);
+        if (player != null && applied != null) {
+            applied.forEach(player::removePotionEffect);
+        }
+    }
+
+    private void applyTagEffects(Player player) {
+        List<PluginConfig.PotionEffectEntry> effects = config.combatTagEffects();
+        if (effects.isEmpty()) return;
+
+        List<PotionEffectType> appliedTypes = new ArrayList<>();
+
+        for (PluginConfig.PotionEffectEntry entry : effects) {
+            NamespacedKey key = NamespacedKey.minecraft(entry.type().toLowerCase());
+            PotionEffectType type = Registry.EFFECT.get(key);
+            if (type == null) {
+                plugin.getLogger().warning("Unknown potion effect in config: " + entry.type());
+                continue;
+            }
+            if (player.hasPotionEffect(type)) continue;
+
+            int durationTicks = entry.durationSeconds() * 20;
+            player.addPotionEffect(new PotionEffect(type, durationTicks, entry.amplifier(), true, entry.showParticles()));
+            appliedTypes.add(type);
+        }
+
+        if (!appliedTypes.isEmpty()) {
+            appliedEffects.put(player.getUniqueId(), appliedTypes);
+        }
     }
 
     private void notifyAfkIfNeeded(Player player) {

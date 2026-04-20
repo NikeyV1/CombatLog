@@ -4,11 +4,12 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Central access point for all config values.
- * Eliminates scattered getConfig() calls throughout listeners.
  */
 public class PluginConfig {
 
@@ -99,6 +100,56 @@ public class PluginConfig {
     public List<String> blockedCommands() {
         return config.getStringList("combat-log.blocked-commands");
     }
+
+    // ── Potion effects on tag ─────────────────────────────────────────────────
+
+    /**
+     * Returns the list of potion effects to apply when a player first enters combat.
+     * Config format:
+     * <pre>
+     * combat-log:
+     *   tag-effects:
+     *     - type: GLOWING
+     *       duration-seconds: 15
+     *       amplifier: 0
+     *       show-particles: false
+     * </pre>
+     */
+    public List<PotionEffectEntry> combatTagEffects() {
+        List<?> raw = config.getList("combat-log.tag-effects");
+        if (raw == null || raw.isEmpty()) return List.of();
+
+        List<PotionEffectEntry> result = new ArrayList<>();
+        for (Object obj : raw) {
+            if (!(obj instanceof Map<?, ?> rawMap)) continue;
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) rawMap;
+
+            String type           = String.valueOf(map.getOrDefault("type", "")).toUpperCase();
+            int durationSeconds   = toInt(map.getOrDefault("duration-seconds", 15), 15);
+            int amplifier         = toInt(map.getOrDefault("amplifier", 0), 0);
+            boolean showParticles = Boolean.parseBoolean(String.valueOf(map.getOrDefault("show-particles", false)));
+
+            if (!type.isBlank()) {
+                result.add(new PotionEffectEntry(type, durationSeconds, amplifier, showParticles));
+            }
+        }
+        return result;
+    }
+
+    private int toInt(Object value, int def) {
+        try { return Integer.parseInt(String.valueOf(value)); }
+        catch (NumberFormatException e) { return def; }
+    }
+
+    /** Immutable record for a single configured potion effect entry. */
+    public record PotionEffectEntry(
+            String type,
+            int durationSeconds,
+            int amplifier,
+            boolean showParticles
+    ) {}
 
     // ── Messages ──────────────────────────────────────────────────────────────
 

@@ -7,16 +7,22 @@ import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.UUID;
 
 /**
- * Owns all combat state (timers, boss bars) and exposes a clean API
+ * Owns all combat state (timers, boss bars, applied effects) and exposes a clean API
  * for tagging/untagging players. Listeners never touch the maps directly.
  */
 public class CombatManager {
@@ -31,6 +37,8 @@ public class CombatManager {
     private final Map<UUID, BukkitRunnable> activeTimers = new HashMap<>();
     /** Active boss bars per player. */
     private final Map<UUID, BossBar> bossBars = new HashMap<>();
+    /** Potion effect types applied by CombatLog — removed on untag. */
+    private final Map<UUID, List<PotionEffectType>> appliedEffects = new HashMap<>();
 
     public CombatManager(CombatLog plugin, PluginConfig config) {
         this.plugin = plugin;
@@ -74,7 +82,9 @@ public class CombatManager {
             return;
         }
 
+        // First tag only
         notifyAfkIfNeeded(player);
+        applyTagEffects(player);
         combatTimers.put(id, duration);
         scheduleTimerTask(player, duration);
     }
@@ -89,7 +99,7 @@ public class CombatManager {
         tag(b);
     }
 
-    /** Removes a player from combat and cancels their timer/bossbar. */
+    /** Removes a player from combat and cancels their timer/bossbar/effects. */
     public void untag(Player player) {
         clearBarriers(player);
         cleanup(player.getUniqueId());
@@ -103,6 +113,7 @@ public class CombatManager {
         combatTimers.clear();
         bossBars.forEach((id, bar) -> Bukkit.getOnlinePlayers().forEach(bar::removeViewer));
         bossBars.clear();
+        appliedEffects.clear();
     }
 
     // ── Internal ──────────────────────────────────────────────────────────────
@@ -183,6 +194,38 @@ public class CombatManager {
 
         BossBar bar = bossBars.remove(id);
         if (bar != null) Bukkit.getOnlinePlayers().forEach(bar::removeViewer);
+
+        // Only remove effects that CombatLog itself applied
+        Player player = Bukkit.getPlayer(id);
+        List<PotionEffectType> applied = appliedEffects.remove(id);
+        if (player != null && applied != null) {
+            applied.forEach(player::removePotionEffect);
+        }
+    }
+
+    private void applyTagEffects(Player player) {
+        List<PluginConfig.PotionEffectEntry> effects = config.combatTagEffects();
+        if (effects.isEmpty()) return;
+
+        List<PotionEffectType> appliedTypes = new ArrayList<>();
+
+        for (PluginConfig.PotionEffectEntry entry : effects) {
+            NamespacedKey key = NamespacedKey.minecraft(entry.type().toLowerCase());
+            PotionEffectType type = Registry.EFFECT.get(key);
+            if (type == null) {
+                plugin.getLogger().warning("Unknown potion effect in config: " + entry.type());
+                continue;
+            }
+            if (player.hasPotionEffect(type)) continue;
+
+            int durationTicks = entry.durationSeconds() * 20;
+            player.addPotionEffect(new PotionEffect(type, durationTicks, entry.amplifier(), true, entry.showParticles()));
+            appliedTypes.add(type);
+        }
+
+        if (!appliedTypes.isEmpty()) {
+            appliedEffects.put(player.getUniqueId(), appliedTypes);
+        }
     }
 
     private void notifyAfkIfNeeded(Player player) {

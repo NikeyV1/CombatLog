@@ -48,6 +48,15 @@ combat-log:
     radius: 10
 
   # =========================
+  # Potion effects on combat tag
+  # =========================
+  tag-effects:
+    # - type: SLOWNESS
+    #   duration-seconds: 15
+    #   amplifier: 0
+    #   show-particles: true
+
+  # =========================
   # WorldGuard integration
   # =========================
   worldguard:

@@ -118,30 +118,6 @@ public class CombatRestrictionListener implements Listener {
     // ── Riptide ───────────────────────────────────────────────────────────────
 
     @EventHandler(ignoreCancelled = true)
-    public void onPlayerMove(PlayerMoveEvent event) {
-        Player player = event.getPlayer();
-        if (!config.stopRiptidingInCombat()) return;
-        if (!combat.isInCombat(player)) return;
-        if (!player.isRiptiding()) return;
-        if (player.hasPermission("combatlog.bypass")) return;
-
-        long now  = System.currentTimeMillis();
-        long last = riptideCooldowns.getOrDefault(player.getUniqueId(), 0L);
-
-        if (now - last >= config.riptideCooldownMs()) {
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    riptideCooldowns.put(player.getUniqueId(), now);
-                }
-            }.runTaskLater(CombatLog.getPlugin(CombatLog.class), 40L);
-        } else {
-            event.setCancelled(true);
-            applyDamage(player);
-        }
-    }
-
-    @EventHandler(ignoreCancelled = true)
     public void onPlayerRiptide(PlayerRiptideEvent event) {
         Player player = event.getPlayer();
         if (!config.stopRiptidingInCombat()) return;

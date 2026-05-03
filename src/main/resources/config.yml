@@ -10,7 +10,7 @@ combat-log:
     elytra:
       disabled-in-combat: true
     teleporting:
-      disabled-in-combat: false          # Disable any teleport while in combat (includes Chorus Fruit)
+      disabled-in-combat: false          # Disable any teleport while in combat
     mending:
       disabled-in-combat: true
     riptide:
@@ -32,22 +32,6 @@ combat-log:
       only-if-already-in-combat: false   # If false: pearl can start combat
 
   # =========================
-  # Potion effects on combat tag
-  # Applied when a player first enters combat, removed when combat ends.
-  # Players who already have the effect are not affected.
-  # Effect types: https://jd.papermc.io/paper/1.21/org/bukkit/potion/PotionEffectType.html
-  # =========================
-  tag-effects:
-    - type: GLOWING              # Makes the player glow (visible through walls)
-      duration-seconds: 15
-      amplifier: 0
-      show-particles: false
-    # - type: SLOWNESS
-    #   duration-seconds: 15
-    #   amplifier: 0
-    #   show-particles: true
-
-  # =========================
   # Exclusions / blocks
   # =========================
   ignored-worlds:
@@ -60,24 +44,17 @@ combat-log:
   # Combat zone
   # =========================
   combat-zone:
-    enabled: true
+    enabled: false
     radius: 10
 
   # =========================
-  # Messages
+  # WorldGuard integration
   # =========================
-  messages:
-    combat-log: "&c{player} has combat logged!"
-    elytra-use-denied: "&dYou can't use elytra in combat"
-    teleporting-denied: "&dYou can't teleport in combat"
-    blocked-command: "&cYou can't use this command in combat"
-    region-entry-denied: "&cYou can't enter this region in combat"
-    riptide-denied: "&cYou can't use riptide in combat"
-
-    timer:
-      actionbar: "&c{timeLeft}/{maxTime}"
-      bossbar-title: "&cIn Combat: {timeLeft}s"
-
+  worldguard:
+    safe-zone-barrier:
+      enabled: true                      # Show visual barrier at safe zone borders
+      material: RED_STAINED_GLASS        # Any valid Material name (e.g. BARRIER, BLUE_STAINED_GLASS)
+      radius: 1                          # Radius of fake blocks shown around the boundary (in blocks)
 
 anti-kill-abuse:
   enabled: true

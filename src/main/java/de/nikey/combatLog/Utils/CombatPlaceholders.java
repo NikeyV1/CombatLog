@@ -12,8 +12,6 @@ import org.jetbrains.annotations.NotNull;
  * Available placeholders:
  *   %combatlog_in_combat%        → "true" / "false"
  *   %combatlog_time_left%        → remaining seconds, or "" if not in combat
- *   %combatlog_opponent_name%    → name of the current opponent, or ""
- *   %combatlog_opponent_health%  → opponent's HP as "00.00", or ""
  *
  * Only registered when PlaceholderAPI is present — see CombatLog#registerPlaceholders().
  */
@@ -51,18 +49,12 @@ public class CombatPlaceholders extends PlaceholderExpansion {
         if (!(offlinePlayer instanceof Player player)) return "";
 
         return switch (params.toLowerCase()) {
-            case "in_combat"       -> String.valueOf(combat.isInCombat(player));
-            case "time_left"       -> combat.isInCombat(player)
-                    ? String.valueOf(combat.getTimeLeft(player))
-                    : "";
-            case "opponent_name"   -> {
-                Player opp = combat.getOpponent(player);
-                yield opp != null ? opp.getName() : "";
-            }
-            case "opponent_health" -> {
-                Player opp = combat.getOpponent(player);
-                yield opp != null ? String.format("%.2f", opp.getHealth()) : "";
-            }
+            case "in_combat" -> String.valueOf(combat.isInCombat(player));
+            case "time_left" -> combat.getRemainingCombatSeconds(player)
+                    .stream()
+                    .mapToObj(String::valueOf)
+                    .findFirst()
+                    .orElse("");
             default -> null;
         };
     }

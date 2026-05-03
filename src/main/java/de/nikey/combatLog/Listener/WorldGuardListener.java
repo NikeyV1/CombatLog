@@ -8,16 +8,19 @@ import com.sk89q.worldguard.protection.regions.RegionContainer;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
 import de.nikey.combatLog.Combat.CombatManager;
 import de.nikey.combatLog.Config.PluginConfig;
+import de.nikey.combatLog.Utils.SafeZoneBarrierManager;
 import de.nikey.combatLog.Utils.WorldGuardHook;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 /**
  * Prevents players from entering WorldGuard regions that have
  * the {@code allow-combat-entry} flag set to DENY while in combat.
+ * Optionally shows a visual barrier at the region boundary.
  *
  * Only registered when WorldGuard is present.
  */
@@ -25,10 +28,12 @@ public class WorldGuardListener implements Listener {
 
     private final CombatManager combat;
     private final PluginConfig config;
+    private final SafeZoneBarrierManager barrierManager;
 
-    public WorldGuardListener(CombatManager combat, PluginConfig config) {
+    public WorldGuardListener(CombatManager combat, PluginConfig config, SafeZoneBarrierManager barrierManager) {
         this.combat = combat;
         this.config = config;
+        this.barrierManager = barrierManager;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -48,6 +53,13 @@ public class WorldGuardListener implements Listener {
         event.setCancelled(true);
         player.teleport(event.getFrom());
         player.sendMessage(config.message("combat-log.messages.region-entry-denied", "&cYou can't enter this region in combat"));
+
+        barrierManager.showBarrier(player, event.getTo());
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        barrierManager.clearBarrier(event.getPlayer());
     }
 
     /** Returns {@code true} only when the player has actually crossed a block boundary. */

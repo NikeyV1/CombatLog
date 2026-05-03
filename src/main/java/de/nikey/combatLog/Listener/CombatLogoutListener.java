@@ -10,7 +10,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 /**
  * Handles players disconnecting while in combat.
- * Players with {@code combatlog.bypass} are silently untagged with no punishment.
+ * Broadcasts a message and optionally kills the player.
  */
 public class CombatLogoutListener implements Listener {
 
@@ -27,15 +27,10 @@ public class CombatLogoutListener implements Listener {
         Player player = event.getPlayer();
         if (!combat.isInCombat(player)) return;
 
-        if (player.hasPermission("combatlog.bypass")) {
-            combat.untag(player);
-            return;
-        }
-
         String message = config.rawMessage("combat-log.messages.combat-log", "&c{player} has combat logged!")
                 .replace("{player}", player.getName());
 
-        Bukkit.broadcast(PluginConfig.LEGACY.deserialize(message));
+        Bukkit.broadcast(config.colorize(message));
 
         if (config.killOnLogout()) {
             player.setHealth(0);

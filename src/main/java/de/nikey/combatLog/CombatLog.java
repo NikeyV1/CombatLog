@@ -1,19 +1,28 @@
 package de.nikey.combatLog;
 
 import de.nikey.combatLog.Combat.CombatManager;
+import de.nikey.combatLog.Command.CombatLogCommand;
 import de.nikey.combatLog.Config.PluginConfig;
 import de.nikey.combatLog.Listener.*;
 import de.nikey.combatLog.Utils.CombatPlaceholders;
 import de.nikey.combatLog.Utils.Metrics;
 import de.nikey.combatLog.Utils.ModrinthUpdateChecker;
+import de.nikey.combatLog.Utils.SafeZoneBarrierManager;
 import de.nikey.combatLog.Utils.WorldGuardBridge;
 import org.bukkit.Bukkit;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.util.Objects;
 
 public final class CombatLog extends JavaPlugin {
 
     private CombatManager combatManager;
+    private PluginConfig pluginConfig;
     private WorldGuardBridge worldGuardBridge = null;
 
     @Override
@@ -23,6 +32,7 @@ public final class CombatLog extends JavaPlugin {
         }
     }
 
+    // Isolated – WorldGuardHook class only loaded when this method runs
     private void initWorldGuard() {
         de.nikey.combatLog.Utils.WorldGuardHook hook =
                 new de.nikey.combatLog.Utils.WorldGuardHook(this);
@@ -33,11 +43,13 @@ public final class CombatLog extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        ensureMessagesFileExists();
 
-        PluginConfig pluginConfig = new PluginConfig(getConfig());
+        pluginConfig = new PluginConfig(getConfig(), loadMessagesConfig());
         combatManager = new CombatManager(this, pluginConfig);
 
         registerListeners(pluginConfig);
+        registerCommands();
         registerPlaceholders();
 
         new ModrinthUpdateChecker("LI8sodAD").checkForUpdates();
@@ -63,16 +75,14 @@ public final class CombatLog extends JavaPlugin {
         }
     }
 
-    private void registerWorldGuardListener(PluginManager pm, PluginConfig config) {
-        pm.registerEvents(
-                new de.nikey.combatLog.Listener.WorldGuardListener(combatManager, config), this);
+    private void registerCommands() {
+        PluginCommand command = Objects.requireNonNull(getCommand("combatlog"), "combatlog command missing in plugin.yml");
+        CombatLogCommand executor = new CombatLogCommand(this);
+        command.setExecutor(executor);
+        command.setTabCompleter(executor);
     }
 
-    /**
-     * Registers the PlaceholderAPI expansion only if PAPI is present.
-     * Isolated into its own method so CombatPlaceholders (and PlaceholderExpansion)
-     * are never loaded when PAPI is absent — same pattern as WorldGuard.
-     */
+    // Isolated – CombatPlaceholders (and PlaceholderExpansion) never loaded when PAPI is absent
     private void registerPlaceholders() {
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") == null) return;
         initPlaceholders();
@@ -83,8 +93,41 @@ public final class CombatLog extends JavaPlugin {
         getLogger().info("PlaceholderAPI detected: placeholders registered.");
     }
 
+    // Isolated – WorldGuardListener and SafeZoneBarrierManager only loaded when WorldGuard is present
+    private void registerWorldGuardListener(PluginManager pm, PluginConfig config) {
+        SafeZoneBarrierManager barrierManager = new SafeZoneBarrierManager(config);
+        combatManager.setBarrierManager(barrierManager);
+        pm.registerEvents(
+                new de.nikey.combatLog.Listener.WorldGuardListener(combatManager, config, barrierManager), this);
+    }
+
     public static boolean isWorldGuardEnabled() {
         CombatLog instance = getPlugin(CombatLog.class);
         return instance.worldGuardBridge != null && instance.worldGuardBridge.isEnabled();
+    }
+
+    public CombatManager getCombatManager() {
+        return combatManager;
+    }
+
+    public PluginConfig getPluginConfig() {
+        return pluginConfig;
+    }
+
+    public void reloadPluginSettings() {
+        reloadConfig();
+        pluginConfig.reload(getConfig(), loadMessagesConfig());
+    }
+
+    private FileConfiguration loadMessagesConfig() {
+        File messagesFile = new File(getDataFolder(), "messages.yml");
+        return YamlConfiguration.loadConfiguration(messagesFile);
+    }
+
+    private void ensureMessagesFileExists() {
+        File messagesFile = new File(getDataFolder(), "messages.yml");
+        if (!messagesFile.exists()) {
+            saveResource("messages.yml", false);
+        }
     }
 }

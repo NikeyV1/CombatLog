@@ -8,7 +8,16 @@ softdepend:
   - WorldGuard
   - PlaceholderAPI
 
+commands:
+  combatlog:
+    description: CombatLog admin command
+    usage: /combatlog <reload|status <player>|untag <player>>
+    permission: combatlog.admin
+
 permissions:
+  combatlog.admin:
+    description: Access to CombatLog admin commands
+    default: op
   combatlog.bypass:
     description: Exempts the player from all CombatLog restrictions and tagging.
     default: op

@@ -1,24 +1,35 @@
 package de.nikey.combatLog.Config;
 
+import de.nikey.combatLog.Utils.Color.Colorizer;
+import de.nikey.combatLog.Utils.Color.Impl.MiniMessageColorizer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Central access point for all config values.
+ * Eliminates scattered getConfig() calls throughout listeners.
  */
 public class PluginConfig {
 
     public static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
+    private static final Colorizer COLORIZER = new MiniMessageColorizer();
 
-    private final FileConfiguration config;
+    private FileConfiguration config;
+    private FileConfiguration messages;
 
-    public PluginConfig(FileConfiguration config) {
+    public PluginConfig(FileConfiguration config, FileConfiguration messages) {
         this.config = config;
+        this.messages = messages;
+    }
+
+    public void reload(FileConfiguration config, FileConfiguration messages) {
+        this.config = config;
+        this.messages = messages;
     }
 
     // ── Timer ────────────────────────────────────────────────────────────────
@@ -101,63 +112,48 @@ public class PluginConfig {
         return config.getStringList("combat-log.blocked-commands");
     }
 
-    // ── Potion effects on tag ─────────────────────────────────────────────────
+    // ── SafeZone Barrier ─────────────────────────────────────────────────────
 
-    /**
-     * Returns the list of potion effects to apply when a player first enters combat.
-     * Config format:
-     * <pre>
-     * combat-log:
-     *   tag-effects:
-     *     - type: GLOWING
-     *       duration-seconds: 15
-     *       amplifier: 0
-     *       show-particles: false
-     * </pre>
-     */
-    public List<PotionEffectEntry> combatTagEffects() {
-        List<?> raw = config.getList("combat-log.tag-effects");
-        if (raw == null || raw.isEmpty()) return List.of();
+    public boolean safeZoneBarrierEnabled() {
+        return config.getBoolean("combat-log.worldguard.safe-zone-barrier.enabled", true);
+    }
 
-        List<PotionEffectEntry> result = new ArrayList<>();
-        for (Object obj : raw) {
-            if (!(obj instanceof Map<?, ?> rawMap)) continue;
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> map = (Map<String, Object>) rawMap;
-
-            String type           = String.valueOf(map.getOrDefault("type", "")).toUpperCase();
-            int durationSeconds   = toInt(map.getOrDefault("duration-seconds", 15), 15);
-            int amplifier         = toInt(map.getOrDefault("amplifier", 0), 0);
-            boolean showParticles = Boolean.parseBoolean(String.valueOf(map.getOrDefault("show-particles", false)));
-
-            if (!type.isBlank()) {
-                result.add(new PotionEffectEntry(type, durationSeconds, amplifier, showParticles));
-            }
+    public Material safeZoneBarrierMaterial() {
+        String name = config.getString("combat-log.worldguard.safe-zone-barrier.material", "RED_STAINED_GLASS");
+        try {
+            return Material.valueOf(name.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return Material.RED_STAINED_GLASS;
         }
-        return result;
     }
 
-    private int toInt(Object value, int def) {
-        try { return Integer.parseInt(String.valueOf(value)); }
-        catch (NumberFormatException e) { return def; }
+    public int safeZoneBarrierRadius() {
+        return config.getInt("combat-log.worldguard.safe-zone-barrier.radius", 1);
     }
-
-    /** Immutable record for a single configured potion effect entry. */
-    public record PotionEffectEntry(
-            String type,
-            int durationSeconds,
-            int amplifier,
-            boolean showParticles
-    ) {}
 
     // ── Messages ──────────────────────────────────────────────────────────────
 
     public Component message(String path, String def) {
-        return LEGACY.deserialize(rawMessage(path, def));
+        return COLORIZER.colorize(rawMessage(path, def));
+    }
+
+    public Component message(String path, String def, Map<String, String> placeholders) {
+        return COLORIZER.colorize(rawMessage(path, def, placeholders));
+    }
+
+    public Component colorize(String rawMessage) {
+        return COLORIZER.colorize(rawMessage);
     }
 
     public String rawMessage(String path, String def) {
-        return config.getString(path, def);
+        return messages.getString(path, def);
+    }
+
+    public String rawMessage(String path, String def, Map<String, String> placeholders) {
+        String message = rawMessage(path, def);
+        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+            message = message.replace("{" + entry.getKey() + "}", entry.getValue());
+        }
+        return message;
     }
 }

@@ -1,3 +1,5 @@
+config-version: 2
+
 combat-log:
   # =========================
   # Core settings

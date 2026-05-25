@@ -17,7 +17,7 @@ combat-log:
       disabled-in-combat: true
     riptide:
       stop: false
-      cooldown: 10000                    # riptide cooldown (sec * 100)
+      cooldown: 10000                    # riptide cooldown (ms)
     explosions:
       set-combat-on-explosion: true      # End crystals + block explosions set combat
 
@@ -46,24 +46,26 @@ combat-log:
   # Combat zone
   # =========================
   combat-zone:
-    enabled: true
+    enabled: false
     radius: 10
 
   # =========================
-  # Messages
+  # Potion effects on combat tag
   # =========================
-  messages:
-    combat-log: "&c{player} has combat logged!"
-    elytra-use-denied: "&dYou can't use elytra in combat"
-    teleporting-denied: "&dYou can't teleport in combat"
-    blocked-command: "&cYou can't use this command in combat"
-    region-entry-denied: "&cYou can't enter this region in combat"
-    riptide-denied: "&cYou can't use riptide in combat"
+  tag-effects:
+    # - type: SLOWNESS
+    #   duration-seconds: 15
+    #   amplifier: 0
+    #   show-particles: true
 
-    timer:
-      actionbar: "&c{timeLeft}/{maxTime}"
-      bossbar-title: "&cIn Combat: {timeLeft}s"
-
+  # =========================
+  # WorldGuard integration
+  # =========================
+  worldguard:
+    safe-zone-barrier:
+      enabled: true                      # Show visual barrier at safe zone borders
+      material: RED_STAINED_GLASS        # Any valid Material name (e.g. BARRIER, BLUE_STAINED_GLASS)
+      radius: 1                          # Radius of fake blocks shown around the boundary (in blocks)
 
 anti-kill-abuse:
   enabled: true

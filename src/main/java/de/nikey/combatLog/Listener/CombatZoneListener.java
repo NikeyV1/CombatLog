@@ -11,7 +11,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
 /**
- * Tags players in combat when they are near other players on join.
+ * Tags players in combat when they are near other players.
  * Only active when the combat-zone feature is enabled.
  */
 public class CombatZoneListener implements Listener {

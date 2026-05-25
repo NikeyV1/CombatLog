@@ -1,12 +1,16 @@
 package de.nikey.combatLog;
 
 import de.nikey.combatLog.Combat.CombatManager;
+import de.nikey.combatLog.Command.CombatLogCommand;
 import de.nikey.combatLog.Config.PluginConfig;
 import de.nikey.combatLog.Listener.*;
+import de.nikey.combatLog.Utils.CombatPlaceholders;
 import de.nikey.combatLog.Utils.Metrics;
 import de.nikey.combatLog.Utils.ModrinthUpdateChecker;
+import de.nikey.combatLog.Utils.SafeZoneBarrierManager;
 import de.nikey.combatLog.Utils.WorldGuardBridge;
 import org.bukkit.Bukkit;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
@@ -25,6 +29,7 @@ public final class CombatLog extends JavaPlugin {
     private static final String CONFIG_VERSION_PATH = "config-version";
 
     private CombatManager combatManager;
+    private PluginConfig pluginConfig;
     private WorldGuardBridge worldGuardBridge = null;
 
     @Override
@@ -46,11 +51,14 @@ public final class CombatLog extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         updateConfigIfNeeded();
+        ensureMessagesFileExists();
 
-        PluginConfig pluginConfig = new PluginConfig(getConfig());
+        pluginConfig = new PluginConfig(getConfig(), loadMessagesConfig());
         combatManager = new CombatManager(this, pluginConfig);
 
         registerListeners(pluginConfig);
+        registerCommands();
+        registerPlaceholders();
 
         new ModrinthUpdateChecker("LI8sodAD").checkForUpdates();
         new Metrics(this, 28071);
@@ -75,15 +83,61 @@ public final class CombatLog extends JavaPlugin {
         }
     }
 
-    // Isolated – WorldGuardListener class only loaded when this method runs
+    private void registerCommands() {
+        PluginCommand command = Objects.requireNonNull(getCommand("combatlog"), "combatlog command missing in plugin.yml");
+        CombatLogCommand executor = new CombatLogCommand(this);
+        command.setExecutor(executor);
+        command.setTabCompleter(executor);
+    }
+
+    // Isolated – CombatPlaceholders (and PlaceholderExpansion) never loaded when PAPI is absent
+    private void registerPlaceholders() {
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") == null) return;
+        initPlaceholders();
+    }
+
+    private void initPlaceholders() {
+        new CombatPlaceholders(combatManager).register();
+        getLogger().info("PlaceholderAPI detected: placeholders registered.");
+    }
+
+    // Isolated – WorldGuardListener and SafeZoneBarrierManager only loaded when WorldGuard is present
     private void registerWorldGuardListener(PluginManager pm, PluginConfig config) {
+        SafeZoneBarrierManager barrierManager = new SafeZoneBarrierManager(config);
+        combatManager.setBarrierManager(barrierManager);
         pm.registerEvents(
-                new de.nikey.combatLog.Listener.WorldGuardListener(combatManager, config), this);
+                new de.nikey.combatLog.Listener.WorldGuardListener(combatManager, config, barrierManager), this);
     }
 
     public static boolean isWorldGuardEnabled() {
         CombatLog instance = getPlugin(CombatLog.class);
         return instance.worldGuardBridge != null && instance.worldGuardBridge.isEnabled();
+    }
+
+    public CombatManager getCombatManager() {
+        return combatManager;
+    }
+
+    public PluginConfig getPluginConfig() {
+        return pluginConfig;
+    }
+
+    public void reloadPluginSettings() {
+        reloadConfig();
+        updateConfigIfNeeded();
+        pluginConfig.reload(getConfig(), loadMessagesConfig());
+    }
+
+    private FileConfiguration loadMessagesConfig() {
+        File messagesFile = new File(getDataFolder(), "messages.yml");
+        return YamlConfiguration.loadConfiguration(messagesFile);
+    }
+
+    private void ensureMessagesFileExists() {
+        File messagesFile = new File(getDataFolder(), "messages.yml");
+        if (!messagesFile.exists()) {
+            saveResource("messages.yml", false);
+        }
     }
 
     private void updateConfigIfNeeded() {

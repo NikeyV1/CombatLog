@@ -18,15 +18,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Enforces all restrictions that apply while a player is in combat:
- * elytra, elytra boost, teleporting, command blocking, mending, and riptide.
+ * Enforces all restrictions that apply while a player is in combat.
+ * Players with {@code combatlog.bypass} skip all restrictions.
  */
 public class CombatRestrictionListener implements Listener {
 
     private final CombatManager combat;
     private final PluginConfig config;
 
-    /** Tracks the last riptide-use timestamp per player for cooldown logic. */
     private final Map<UUID, Long> riptideCooldowns = new HashMap<>();
 
     public CombatRestrictionListener(CombatManager combat, PluginConfig config) {
@@ -42,6 +41,7 @@ public class CombatRestrictionListener implements Listener {
         if (!config.elytraDisabledInCombat()) return;
         if (!combat.isInCombat(player)) return;
         if (!event.isGliding()) return;
+        if (player.hasPermission("combatlog.bypass")) return;
 
         event.setCancelled(true);
         player.setGliding(false);
@@ -54,6 +54,7 @@ public class CombatRestrictionListener implements Listener {
         Player player = event.getPlayer();
         if (!config.elytraDisabledInCombat()) return;
         if (!combat.isInCombat(player)) return;
+        if (player.hasPermission("combatlog.bypass")) return;
 
         event.setCancelled(true);
         applyDamage(player);
@@ -68,6 +69,7 @@ public class CombatRestrictionListener implements Listener {
         if (!config.teleportingDisabledInCombat()) return;
         if (!combat.isInCombat(player)) return;
         if (event.getCause() == PlayerTeleportEvent.TeleportCause.UNKNOWN) return;
+        if (player.hasPermission("combatlog.bypass")) return;
 
         event.setCancelled(true);
         applyDamage(player);
@@ -80,6 +82,7 @@ public class CombatRestrictionListener implements Listener {
     public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event) {
         Player player = event.getPlayer();
         if (!combat.isInCombat(player)) return;
+        if (player.hasPermission("combatlog.bypass")) return;
 
         List<String> blocked = config.blockedCommands();
         if (blocked.isEmpty()) return;
@@ -106,6 +109,7 @@ public class CombatRestrictionListener implements Listener {
     @EventHandler
     public void onMend(PlayerItemMendEvent event) {
         if (!config.mendingDisabledInCombat()) return;
+        if (event.getPlayer().hasPermission("combatlog.bypass")) return;
         if (combat.isInCombat(event.getPlayer())) {
             event.setCancelled(true);
         }
@@ -114,49 +118,23 @@ public class CombatRestrictionListener implements Listener {
     // ── Riptide ───────────────────────────────────────────────────────────────
 
     @EventHandler(ignoreCancelled = true)
-    public void onPlayerMove(PlayerMoveEvent event) {
-        Player player = event.getPlayer();
-        if (!config.stopRiptidingInCombat()) return;
-        if (!combat.isInCombat(player)) return;
-        if (!player.isRiptiding()) return;
-
-        long now  = System.currentTimeMillis();
-        long last = riptideCooldowns.getOrDefault(player.getUniqueId(), 0L);
-
-        if (now - last >= config.riptideCooldownMs()) {
-            // Allow this riptide, but set cooldown after a short delay
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    riptideCooldowns.put(player.getUniqueId(), now);
-                }
-            }.runTaskLater(CombatLog.getPlugin(CombatLog.class), 40L);
-        } else {
-            event.setCancelled(true);
-            applyDamage(player);
-        }
-    }
-
-    @EventHandler(ignoreCancelled = true)
     public void onPlayerRiptide(PlayerRiptideEvent event) {
         Player player = event.getPlayer();
         if (!config.stopRiptidingInCombat()) return;
         if (!combat.isInCombat(player)) return;
+        if (player.hasPermission("combatlog.bypass")) return;
 
         long now  = System.currentTimeMillis();
         long last = riptideCooldowns.getOrDefault(player.getUniqueId(), 0L);
 
         if (now - last >= config.riptideCooldownMs()) {
-            // First use within the window: allow it but start cooldown
             riptideCooldowns.put(player.getUniqueId(), now);
         } else {
-            // Still on cooldown: block and punish
             event.setCancelled(true);
             applyDamage(player);
             player.sendMessage(config.message("combat-log.messages.riptide-denied", "&cYou can't use riptide in combat"));
         }
     }
-
 
     // ── Helper ────────────────────────────────────────────────────────────────
 

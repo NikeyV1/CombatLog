@@ -1,3 +1,5 @@
+config-version: 2
+
 combat-log:
   # =========================
   # Core settings
@@ -51,10 +53,10 @@ combat-log:
   # Potion effects on combat tag
   # =========================
   tag-effects:
-    # - type: SLOWNESS
-    #   duration-seconds: 15
-    #   amplifier: 0
-    #   show-particles: true
+  # - type: SLOWNESS
+  #   duration-seconds: 15
+  #   amplifier: 0
+  #   show-particles: true
 
   # =========================
   # WorldGuard integration
@@ -63,7 +65,9 @@ combat-log:
     safe-zone-barrier:
       enabled: true                      # Show visual barrier at safe zone borders
       material: RED_STAINED_GLASS        # Any valid Material name (e.g. BARRIER, BLUE_STAINED_GLASS)
-      radius: 1                          # Radius of fake blocks shown around the boundary (in blocks)
+      radius: 1                          # Edge-detection thickness (in blocks), keep small
+      view-distance: 8                   # How far from the border the barrier stays visible (in blocks)
+      height: 3                          # How many blocks above the player the barrier scan checks
 
 anti-kill-abuse:
   enabled: true

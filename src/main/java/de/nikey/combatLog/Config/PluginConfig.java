@@ -181,6 +181,21 @@ public class PluginConfig {
         return config.getInt("combat-log.worldguard.safe-zone-barrier.radius", 1);
     }
 
+    /**
+     * How far around the player (in blocks) the plugin scans for the region
+     * edge when rendering the barrier. Unlike {@link #safeZoneBarrierRadius()},
+     * which controls edge-detection thickness, this controls how far away
+     * from the boundary the player can be and still see the barrier.
+     */
+    public int safeZoneBarrierViewDistance() {
+        return config.getInt("combat-log.worldguard.safe-zone-barrier.view-distance", 8);
+    }
+
+    /** How many blocks above the player's feet the barrier scan extends vertically. */
+    public int safeZoneBarrierHeight() {
+        return config.getInt("combat-log.worldguard.safe-zone-barrier.height", 3);
+    }
+
     // ── Messages ──────────────────────────────────────────────────────────────
 
     public Component message(String path, String def) {

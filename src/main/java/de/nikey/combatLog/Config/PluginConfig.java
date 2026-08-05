@@ -74,10 +74,6 @@ public class PluginConfig {
         return config.getInt("combat-log.restrictions.riptide.cooldown", 10000);
     }
 
-    public boolean explosionsSetCombat() {
-        return config.getBoolean("combat-log.restrictions.explosions.set-combat-on-explosion", true);
-    }
-
     // ── Triggers ─────────────────────────────────────────────────────────────
 
     public boolean enderpearlSetCombatOnLand() {
@@ -86,6 +82,14 @@ public class PluginConfig {
 
     public boolean enderpearlOnlyIfAlreadyInCombat() {
         return config.getBoolean("combat-log.triggers.enderpearl.only-if-already-in-combat", false);
+    }
+
+    public boolean untagOnKillEnabled() {
+        return config.getBoolean("combat-log.triggers.untag-on-kill", true);
+    }
+
+    public boolean explosionsSetCombat() {
+        return config.getBoolean("combat-log.triggers.explosions.set-combat-on-explosion", true);
     }
 
     // ── World / Zone ──────────────────────────────────────────────────────────

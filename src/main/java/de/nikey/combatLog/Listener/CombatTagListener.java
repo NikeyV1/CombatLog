@@ -7,10 +7,7 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByBlockEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.projectiles.ProjectileSource;
 
 /**
@@ -104,5 +101,14 @@ public class CombatTagListener implements Listener {
         combat.untag(player);
         combat.tag(player);
         player.setGliding(false);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        if (!config.untagOnKillEnabled()) return;
+        if (!(event.getEntity().getKiller() instanceof Player killer)) return;
+        if (!combat.isInCombat(killer)) return;
+
+        combat.untag(killer);
     }
 }

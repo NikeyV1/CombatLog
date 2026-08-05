@@ -11,6 +11,7 @@ import de.nikey.combatLog.Utils.SafeZoneBarrierManager;
 import de.nikey.combatLog.Utils.WorldGuardBridge;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
@@ -22,11 +23,24 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public final class CombatLog extends JavaPlugin {
-    private static final int CURRENT_CONFIG_VERSION = 2;
+    private static final int CURRENT_CONFIG_VERSION = 3;
     private static final String CONFIG_VERSION_PATH = "config-version";
+
+    private static final Map<Integer, List<PathMove>> PATH_MIGRATIONS = Map.of(
+            3, List.of(
+                    new PathMove(
+                            "combat-log.restrictions.explosions.set-combat-on-explosion",
+                            "combat-log.triggers.explosions.set-combat-on-explosion"
+                    )
+            )
+    );
+
+    private record PathMove(String from, String to) {}
 
     private CombatManager combatManager;
     private PluginConfig pluginConfig;
@@ -147,6 +161,8 @@ public final class CombatLog extends JavaPlugin {
         }
 
         backupConfigFile(currentVersion);
+        applyPathMigrations(currentVersion);
+
         FileConfiguration defaults;
         try (InputStreamReader reader = new InputStreamReader(
                 Objects.requireNonNull(getResource("config.yml")), StandardCharsets.UTF_8)) {
@@ -163,6 +179,35 @@ public final class CombatLog extends JavaPlugin {
         reloadConfig();
 
         getLogger().info("Updated config.yml from version " + currentVersion + " to " + CURRENT_CONFIG_VERSION + ".");
+    }
+
+    private void applyPathMigrations(int fromVersion) {
+        for (Map.Entry<Integer, List<PathMove>> entry : PATH_MIGRATIONS.entrySet()) {
+            if (entry.getKey() <= fromVersion) continue;
+            for (PathMove move : entry.getValue()) {
+                movePath(move.from(), move.to());
+            }
+        }
+    }
+
+    private void movePath(String oldPath, String newPath) {
+        if (!getConfig().isSet(oldPath)) return;
+
+        getConfig().set(newPath, getConfig().get(oldPath));
+        getConfig().set(oldPath, null);
+        removeIfEmptyParent(oldPath);
+    }
+
+    private void removeIfEmptyParent(String path) {
+        int lastDot = path.lastIndexOf('.');
+        if (lastDot < 0) return;
+
+        String parentPath = path.substring(0, lastDot);
+        ConfigurationSection parent = getConfig().getConfigurationSection(parentPath);
+        if (parent != null && parent.getKeys(false).isEmpty()) {
+            getConfig().set(parentPath, null);
+            removeIfEmptyParent(parentPath);
+        }
     }
 
     private void backupConfigFile(int oldVersion) {

@@ -6,7 +6,6 @@ import org.bukkit.command.CommandSender;
 import java.util.logging.Level;
 
 public class ReloadSubcommand implements Subcommand {
-
     private final CombatLog plugin;
 
     public ReloadSubcommand(CombatLog plugin) {

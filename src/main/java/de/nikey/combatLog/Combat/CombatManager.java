@@ -51,7 +51,6 @@ public class CombatManager {
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
-
     public boolean isInCombat(Player player) {
         return combatTimers.containsKey(player.getUniqueId());
     }

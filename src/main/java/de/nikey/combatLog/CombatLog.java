@@ -86,7 +86,7 @@ public final class CombatLog extends JavaPlugin {
     private void registerListeners(PluginConfig config) {
         PluginManager pm = Bukkit.getPluginManager();
 
-        pm.registerEvents(new CombatTagListener(combatManager, config), this);
+        pm.registerEvents(new CombatTagListener(combatManager, config, worldGuardBridge), this);
         pm.registerEvents(new CombatRestrictionListener(combatManager, config), this);
         pm.registerEvents(new CombatZoneListener(this, combatManager, config), this);
         pm.registerEvents(new CombatLogoutListener(combatManager, config), this);

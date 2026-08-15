@@ -11,7 +11,6 @@ import java.util.Locale;
 import java.util.Map;
 
 public class StatusSubcommand implements Subcommand {
-
     private final CombatLog plugin;
 
     public StatusSubcommand(CombatLog plugin) {

@@ -2,6 +2,7 @@ package de.nikey.combatLog.Listener;
 
 import de.nikey.combatLog.Combat.CombatManager;
 import de.nikey.combatLog.Config.PluginConfig;
+import de.nikey.combatLog.Utils.WorldGuardBridge;
 import org.bukkit.Material;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -10,18 +11,16 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
 import org.bukkit.projectiles.ProjectileSource;
 
-/**
- * Handles all events that trigger combat tagging.
- * Players with {@code combatlog.bypass} are never tagged.
- */
 public class CombatTagListener implements Listener {
 
     private final CombatManager combat;
     private final PluginConfig config;
+    private final WorldGuardBridge worldGuard;
 
-    public CombatTagListener(CombatManager combat, PluginConfig config) {
+    public CombatTagListener(CombatManager combat, PluginConfig config, WorldGuardBridge worldGuard) {
         this.combat = combat;
         this.config = config;
+        this.worldGuard = worldGuard;
     }
 
     // ── Direct & Projectile Damage ────────────────────────────────────────────
@@ -31,6 +30,10 @@ public class CombatTagListener implements Listener {
         if (config.isIgnoredWorld(event.getEntity().getWorld().getName())) return;
         if (!(event.getEntity() instanceof Player damaged)) return;
         if (damaged.hasPermission("combatlog.bypass")) return;
+        if (isSafeZone(damaged)) {
+            event.setCancelled(true);
+            return;
+        }
 
         Player damager = resolveAttacker(event.getDamager());
         if (damager == null || damager == damaged) return;
@@ -61,6 +64,10 @@ public class CombatTagListener implements Listener {
         if (!(event.getDamager() instanceof EnderCrystal)) return;
         if (!(event.getEntity() instanceof Player damaged)) return;
         if (damaged.hasPermission("combatlog.bypass")) return;
+        if (isSafeZone(damaged)) {
+            event.setCancelled(true);
+            return;
+        }
 
         combat.untag(damaged);
         combat.tag(damaged);
@@ -75,6 +82,10 @@ public class CombatTagListener implements Listener {
         if (config.isIgnoredWorld(event.getEntity().getWorld().getName())) return;
         if (!(event.getEntity() instanceof Player damaged)) return;
         if (damaged.hasPermission("combatlog.bypass")) return;
+        if (isSafeZone(damaged)) {
+            event.setCancelled(true);
+            return;
+        }
 
         boolean isBlockExplosion = event.getCause() == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION;
         boolean isRespawnAnchor  = event.getDamager() != null
@@ -97,6 +108,7 @@ public class CombatTagListener implements Listener {
         if (!config.enderpearlSetCombatOnLand()) return;
         if (player.hasPermission("combatlog.bypass")) return;
         if (config.enderpearlOnlyIfAlreadyInCombat() && !combat.isInCombat(player)) return;
+        if (isSafeZone(player)) return;
 
         combat.untag(player);
         combat.tag(player);
@@ -110,5 +122,9 @@ public class CombatTagListener implements Listener {
         if (!combat.isInCombat(killer)) return;
 
         combat.untag(killer);
+    }
+
+    private boolean isSafeZone(Player player) {
+        return worldGuard != null && worldGuard.isEnabled() && worldGuard.isSafeZone(player);
     }
 }

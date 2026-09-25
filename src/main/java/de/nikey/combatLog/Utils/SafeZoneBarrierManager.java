@@ -93,6 +93,20 @@ public class SafeZoneBarrierManager {
         }
     }
 
+    /**
+     * Re-sends all fake blocks currently shown to this player, e.g. after a
+     * cancelled block placement the client may have predicted locally.
+     */
+    public void resendBarrier(Player player) {
+        Set<Location> locations = playerBarriers.get(player.getUniqueId());
+        if (locations == null || locations.isEmpty()) return;
+
+        BlockData data = config.safeZoneBarrierMaterial().createBlockData();
+        for (Location loc : locations) {
+            player.sendBlockChange(loc, data);
+        }
+    }
+
     /** Backwards-compatible alias. */
     public void clearBarrier(Player player) {
         removeBarrier(player);

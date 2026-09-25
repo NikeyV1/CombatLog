@@ -69,6 +69,7 @@ public class CombatRestrictionListener implements Listener {
         if (!config.teleportingDisabledInCombat()) return;
         if (!combat.isInCombat(player)) return;
         if (event.getCause() == PlayerTeleportEvent.TeleportCause.UNKNOWN) return;
+        if (event.getCause() == PlayerTeleportEvent.TeleportCause.ENDER_PEARL && config.teleportingAllowEnderpearl()) return;
         if (player.hasPermission("combatlog.bypass")) return;
 
         event.setCancelled(true);
@@ -84,15 +85,17 @@ public class CombatRestrictionListener implements Listener {
         if (!combat.isInCombat(player)) return;
         if (player.hasPermission("combatlog.bypass")) return;
 
-        List<String> blocked = config.blockedCommands();
-        if (blocked.isEmpty()) return;
+        boolean whitelist = config.commandWhitelistMode();
+        List<String> listed = config.restrictedCommands();
+        if (!whitelist && listed.isEmpty()) return;
 
         String cmd = extractCommand(event.getMessage());
-        boolean isBlocked = blocked.stream()
+        String base = cmd.substring(cmd.indexOf(':') + 1);
+        boolean isListed = listed.stream()
                 .map(s -> s.toLowerCase(Locale.ROOT))
-                .anyMatch(cmd::equals);
+                .anyMatch(s -> s.equals(cmd) || s.equals(base));
 
-        if (isBlocked) {
+        if (isListed != whitelist) {
             event.setCancelled(true);
             player.sendMessage(config.message("combat-log.messages.blocked-command", "&cYou can't use this command in combat"));
         }

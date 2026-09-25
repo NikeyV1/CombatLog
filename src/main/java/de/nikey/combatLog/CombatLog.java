@@ -26,21 +26,38 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
+import java.util.function.UnaryOperator;
 
 public final class CombatLog extends JavaPlugin {
-    private static final int CURRENT_CONFIG_VERSION = 3;
+    private static final int CURRENT_CONFIG_VERSION = 4;
     private static final String CONFIG_VERSION_PATH = "config-version";
 
-    private static final Map<Integer, List<PathMove>> PATH_MIGRATIONS = Map.of(
+    private static final Map<Integer, List<PathMove>> PATH_MIGRATIONS = new TreeMap<>(Map.of(
             3, List.of(
                     new PathMove(
                             "combat-log.restrictions.explosions.set-combat-on-explosion",
                             "combat-log.triggers.explosions.set-combat-on-explosion"
                     )
+            ),
+            4, List.of(
+                    new PathMove(
+                            "combat-log.punishment.kill-on-logout",
+                            "combat-log.punishment.logout.mode",
+                            value -> Boolean.parseBoolean(String.valueOf(value)) ? "kill" : "none"
+                    ),
+                    new PathMove(
+                            "combat-log.blocked-commands",
+                            "combat-log.command-restrictions.commands"
+                    )
             )
-    );
+    ));
 
-    private record PathMove(String from, String to) {}
+    private record PathMove(String from, String to, UnaryOperator<Object> mapper) {
+        PathMove(String from, String to) {
+            this(from, to, UnaryOperator.identity());
+        }
+    }
 
     private CombatManager combatManager;
     private PluginConfig pluginConfig;
@@ -119,8 +136,10 @@ public final class CombatLog extends JavaPlugin {
     private void registerWorldGuardListener(PluginManager pm, PluginConfig config) {
         SafeZoneBarrierManager barrierManager = new SafeZoneBarrierManager(config);
         combatManager.setBarrierManager(barrierManager);
-        pm.registerEvents(
-                new de.nikey.combatLog.Listener.WorldGuardListener(combatManager, config, barrierManager), this);
+        de.nikey.combatLog.Listener.WorldGuardListener listener =
+                new de.nikey.combatLog.Listener.WorldGuardListener(combatManager, config, barrierManager);
+        pm.registerEvents(listener, this);
+        listener.startEnforcementTask(this);
     }
 
     public static boolean isWorldGuardEnabled() {
@@ -172,8 +191,7 @@ public final class CombatLog extends JavaPlugin {
             return;
         }
 
-        getConfig().setDefaults(defaults);
-        getConfig().options().copyDefaults(true);
+        copyMissingDefaults(defaults);
         getConfig().set(CONFIG_VERSION_PATH, CURRENT_CONFIG_VERSION);
         saveConfig();
         reloadConfig();
@@ -181,21 +199,35 @@ public final class CombatLog extends JavaPlugin {
         getLogger().info("Updated config.yml from version " + currentVersion + " to " + CURRENT_CONFIG_VERSION + ".");
     }
 
-    private void applyPathMigrations(int fromVersion) {
-        for (Map.Entry<Integer, List<PathMove>> entry : PATH_MIGRATIONS.entrySet()) {
-            if (entry.getKey() <= fromVersion) continue;
-            for (PathMove move : entry.getValue()) {
-                movePath(move.from(), move.to());
+    private void copyMissingDefaults(FileConfiguration defaults) {
+        for (String key : defaults.getKeys(true)) {
+            if (!defaults.isConfigurationSection(key) && !getConfig().isSet(key)) {
+                getConfig().set(key, defaults.get(key));
+            }
+            if (getConfig().getComments(key).isEmpty()) {
+                getConfig().setComments(key, defaults.getComments(key));
+            }
+            if (getConfig().getInlineComments(key).isEmpty()) {
+                getConfig().setInlineComments(key, defaults.getInlineComments(key));
             }
         }
     }
 
-    private void movePath(String oldPath, String newPath) {
-        if (!getConfig().isSet(oldPath)) return;
+    private void applyPathMigrations(int fromVersion) {
+        for (Map.Entry<Integer, List<PathMove>> entry : PATH_MIGRATIONS.entrySet()) {
+            if (entry.getKey() <= fromVersion) continue;
+            for (PathMove move : entry.getValue()) {
+                movePath(move);
+            }
+        }
+    }
 
-        getConfig().set(newPath, getConfig().get(oldPath));
-        getConfig().set(oldPath, null);
-        removeIfEmptyParent(oldPath);
+    private void movePath(PathMove move) {
+        if (!getConfig().isSet(move.from())) return;
+
+        getConfig().set(move.to(), move.mapper().apply(getConfig().get(move.from())));
+        getConfig().set(move.from(), null);
+        removeIfEmptyParent(move.from());
     }
 
     private void removeIfEmptyParent(String path) {

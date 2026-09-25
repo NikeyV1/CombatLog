@@ -16,9 +16,11 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -39,6 +41,8 @@ public class CombatManager {
     private final Map<UUID, BossBar> bossBars = new HashMap<>();
     /** Potion effect types applied by CombatLog — removed on untag. */
     private final Map<UUID, List<PotionEffectType>> appliedEffects = new HashMap<>();
+    /** Active opponents per player, kept symmetric. */
+    private final Map<UUID, Set<UUID>> opponents = new HashMap<>();
 
     public CombatManager(CombatLog plugin, PluginConfig config) {
         this.plugin = plugin;
@@ -77,7 +81,8 @@ public class CombatManager {
         int duration = config.timerDurationSeconds();
 
         if (combatTimers.containsKey(id)) {
-            combatTimers.put(id, duration); // refresh
+            combatTimers.put(id, duration);
+            refreshTagEffects(player);
             return;
         }
 
@@ -89,13 +94,28 @@ public class CombatManager {
     }
 
     /**
-     * Convenience: untag both, then tag both.
+     * Tags (or refreshes) both players and links them as opponents.
      */
     public void tagBoth(Player a, Player b) {
-        untag(a);
-        untag(b);
         tag(a);
         tag(b);
+        linkOpponents(a.getUniqueId(), b.getUniqueId());
+    }
+
+    public boolean hasActiveOpponents(Player player) {
+        Set<UUID> set = opponents.get(player.getUniqueId());
+        return set != null && !set.isEmpty();
+    }
+
+    /**
+     * Unlinks the defeated opponent from the killer and only untags the killer
+     * if no other active opponents remain.
+     */
+    public void onOpponentDefeated(Player killer, Player victim) {
+        unlinkPair(killer.getUniqueId(), victim.getUniqueId());
+        if (!hasActiveOpponents(killer)) {
+            untag(killer);
+        }
     }
 
     /** Removes a player from combat and cancels their timer/bossbar/effects. */
@@ -113,6 +133,7 @@ public class CombatManager {
         bossBars.forEach((id, bar) -> Bukkit.getOnlinePlayers().forEach(bar::removeViewer));
         bossBars.clear();
         appliedEffects.clear();
+        opponents.clear();
     }
 
     // ── Internal ──────────────────────────────────────────────────────────────
@@ -185,8 +206,35 @@ public class CombatManager {
         }
     }
 
+    private void linkOpponents(UUID a, UUID b) {
+        if (a.equals(b)) return;
+        opponents.computeIfAbsent(a, k -> new HashSet<>()).add(b);
+        opponents.computeIfAbsent(b, k -> new HashSet<>()).add(a);
+    }
+
+    private void unlinkPair(UUID a, UUID b) {
+        removeOpponent(a, b);
+        removeOpponent(b, a);
+    }
+
+    private void removeOpponent(UUID owner, UUID target) {
+        Set<UUID> set = opponents.get(owner);
+        if (set == null) return;
+        set.remove(target);
+        if (set.isEmpty()) opponents.remove(owner);
+    }
+
+    private void unlinkFromAll(UUID id) {
+        Set<UUID> set = opponents.remove(id);
+        if (set == null) return;
+        for (UUID other : set) {
+            removeOpponent(other, id);
+        }
+    }
+
     private void cleanup(UUID id) {
         combatTimers.remove(id);
+        unlinkFromAll(id);
 
         BukkitRunnable task = activeTimers.remove(id);
         if (task != null) task.cancel();
@@ -209,22 +257,40 @@ public class CombatManager {
         List<PotionEffectType> appliedTypes = new ArrayList<>();
 
         for (PluginConfig.PotionEffectEntry entry : effects) {
-            NamespacedKey key = NamespacedKey.minecraft(entry.type().toLowerCase());
-            PotionEffectType type = Registry.EFFECT.get(key);
-            if (type == null) {
-                plugin.getLogger().warning("Unknown potion effect in config: " + entry.type());
-                continue;
-            }
+            PotionEffectType type = resolveEffect(entry);
+            if (type == null) continue;
             if (player.hasPotionEffect(type)) continue;
 
-            int durationTicks = entry.durationSeconds() * 20;
-            player.addPotionEffect(new PotionEffect(type, durationTicks, entry.amplifier(), true, entry.showParticles()));
+            player.addPotionEffect(toEffect(type, entry));
             appliedTypes.add(type);
         }
 
         if (!appliedTypes.isEmpty()) {
             appliedEffects.put(player.getUniqueId(), appliedTypes);
         }
+    }
+
+    private void refreshTagEffects(Player player) {
+        List<PotionEffectType> applied = appliedEffects.get(player.getUniqueId());
+        if (applied == null || applied.isEmpty()) return;
+
+        for (PluginConfig.PotionEffectEntry entry : config.combatTagEffects()) {
+            PotionEffectType type = Registry.EFFECT.get(NamespacedKey.minecraft(entry.type().toLowerCase()));
+            if (type == null || !applied.contains(type)) continue;
+            player.addPotionEffect(toEffect(type, entry));
+        }
+    }
+
+    private PotionEffectType resolveEffect(PluginConfig.PotionEffectEntry entry) {
+        PotionEffectType type = Registry.EFFECT.get(NamespacedKey.minecraft(entry.type().toLowerCase()));
+        if (type == null) {
+            plugin.getLogger().warning("Unknown potion effect in config: " + entry.type());
+        }
+        return type;
+    }
+
+    private PotionEffect toEffect(PotionEffectType type, PluginConfig.PotionEffectEntry entry) {
+        return new PotionEffect(type, entry.durationSeconds() * 20, entry.amplifier(), true, entry.showParticles());
     }
 
     private void notifyAfkIfNeeded(Player player) {

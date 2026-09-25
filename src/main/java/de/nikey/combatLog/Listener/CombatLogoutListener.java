@@ -10,7 +10,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 /**
  * Handles players disconnecting while in combat.
- * Broadcasts a message and optionally kills the player.
+ * Broadcasts a message and applies the configured logout punishment.
  */
 public class CombatLogoutListener implements Listener {
 
@@ -32,10 +32,20 @@ public class CombatLogoutListener implements Listener {
 
         Bukkit.broadcast(config.colorize(message));
 
-        if (config.killOnLogout()) {
-            player.setHealth(0);
+        switch (config.logoutPunishmentMode()) {
+            case KILL -> player.setHealth(0);
+            case COMMANDS -> config.logoutPunishmentCommands().forEach(cmd -> runCommand(cmd, player));
+            case NONE -> {}
         }
 
         combat.untag(player);
+    }
+
+    private void runCommand(String command, Player player) {
+        try {
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replace("{player}", player.getName()));
+        } catch (Exception e) {
+            Bukkit.getLogger().warning("[CombatLog] Logout punishment command failed: " + command + " (" + e.getMessage() + ")");
+        }
     }
 }

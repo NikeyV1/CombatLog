@@ -9,6 +9,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -48,9 +49,20 @@ public class PluginConfig {
         return config.getDouble("combat-log.punishment.damage", 0.0);
     }
 
-    public boolean killOnLogout() {
-        return config.getBoolean("combat-log.punishment.kill-on-logout", false);
+    public LogoutPunishment logoutPunishmentMode() {
+        String raw = config.getString("combat-log.punishment.logout.mode", "none");
+        try {
+            return LogoutPunishment.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return LogoutPunishment.NONE;
+        }
     }
+
+    public List<String> logoutPunishmentCommands() {
+        return config.getStringList("combat-log.punishment.logout.commands");
+    }
+
+    public enum LogoutPunishment { NONE, KILL, COMMANDS }
 
     // ── Restrictions ─────────────────────────────────────────────────────────
 
@@ -60,6 +72,10 @@ public class PluginConfig {
 
     public boolean teleportingDisabledInCombat() {
         return config.getBoolean("combat-log.restrictions.teleporting.disabled-in-combat", false);
+    }
+
+    public boolean teleportingAllowEnderpearl() {
+        return config.getBoolean("combat-log.restrictions.teleporting.allow-enderpearl", false);
     }
 
     public boolean mendingDisabledInCombat() {
@@ -112,8 +128,12 @@ public class PluginConfig {
 
     // ── Commands ──────────────────────────────────────────────────────────────
 
-    public List<String> blockedCommands() {
-        return config.getStringList("combat-log.blocked-commands");
+    public boolean commandWhitelistMode() {
+        return "whitelist".equalsIgnoreCase(config.getString("combat-log.command-restrictions.mode", "blacklist"));
+    }
+
+    public List<String> restrictedCommands() {
+        return config.getStringList("combat-log.command-restrictions.commands");
     }
 
     // ── Potion effects on tag ─────────────────────────────────────────────────

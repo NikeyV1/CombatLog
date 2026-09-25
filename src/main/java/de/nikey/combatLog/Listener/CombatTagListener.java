@@ -69,7 +69,6 @@ public class CombatTagListener implements Listener {
             return;
         }
 
-        combat.untag(damaged);
         combat.tag(damaged);
         damaged.setGliding(false);
     }
@@ -93,7 +92,6 @@ public class CombatTagListener implements Listener {
 
         if (!isBlockExplosion && !isRespawnAnchor) return;
 
-        combat.untag(damaged);
         combat.tag(damaged);
         damaged.setGliding(false);
     }
@@ -110,18 +108,20 @@ public class CombatTagListener implements Listener {
         if (config.enderpearlOnlyIfAlreadyInCombat() && !combat.isInCombat(player)) return;
         if (isSafeZone(player)) return;
 
-        combat.untag(player);
         combat.tag(player);
         player.setGliding(false);
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        if (!config.untagOnKillEnabled()) return;
-        if (!(event.getEntity().getKiller() instanceof Player killer)) return;
-        if (!combat.isInCombat(killer)) return;
+        Player victim = event.getEntity();
+        Player killer = victim.getKiller();
 
-        combat.untag(killer);
+        if (config.untagOnKillEnabled() && killer != null && killer != victim && combat.isInCombat(killer)) {
+            combat.onOpponentDefeated(killer, victim);
+        }
+
+        combat.untag(victim);
     }
 
     private boolean isSafeZone(Player player) {

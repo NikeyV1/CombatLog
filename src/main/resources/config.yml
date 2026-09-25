@@ -1,4 +1,4 @@
-config-version: 3                        # Don't ever change this!
+config-version: 4                        # Don't ever change this!
 
 combat-log:
   # =========================
@@ -13,6 +13,7 @@ combat-log:
       disabled-in-combat: true
     teleporting:
       disabled-in-combat: false          # Disable any teleport while in combat
+      allow-enderpearl: false            # Still allow Ender Pearls while teleporting is disabled
     mending:
       disabled-in-combat: true
     riptide:
@@ -21,7 +22,12 @@ combat-log:
 
   punishment:
     damage: 5.0                          # Damage penalty for restricted actions (0 = off)
-    kill-on-logout: false                # Kill player if they log out in combat
+    logout:
+      mode: none                         # none | kill | commands
+      commands: []                       # Console commands for mode "commands", {player} = player name
+      # commands:
+      #   - "clear {player}"
+      #   - "tempban {player} 10m Combat logging"
 
   # =========================
   # Special triggers
@@ -40,8 +46,10 @@ combat-log:
   ignored-worlds:
     - "ffa"                              # Worlds where combat timer is ignored
 
-  blocked-commands:
-    - "tpa"                              # Commands blocked during combat
+  command-restrictions:
+    mode: blacklist                      # blacklist = block listed commands | whitelist = only allow listed commands
+    commands:
+      - "tpa"
 
   # =========================
   # Combat zone

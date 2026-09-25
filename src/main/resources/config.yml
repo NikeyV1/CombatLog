@@ -33,6 +33,8 @@ combat-log:
   # Special triggers
   # =========================
   triggers:
+    tag-mode: both                       # both | attacker | victim (who gets tagged when a player hits another player)
+    start-below-health: 0                # Only start combat when the hit player drops to this health or lower (20 = full, 0 = always)
     enderpearl:
       set-combat-on-land: true           # Pearl on land triggers combat
       only-if-already-in-combat: false   # If false: pearl can start combat

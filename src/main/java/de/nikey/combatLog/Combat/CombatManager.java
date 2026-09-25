@@ -102,6 +102,15 @@ public class CombatManager {
         linkOpponents(a.getUniqueId(), b.getUniqueId());
     }
 
+    /**
+     * Tags only {@code player} and links {@code opponent}, used when the tag mode
+     * is limited to the attacker or the victim.
+     */
+    public void tagAgainst(Player player, Player opponent) {
+        tag(player);
+        linkOpponents(player.getUniqueId(), opponent.getUniqueId());
+    }
+
     public boolean hasActiveOpponents(Player player) {
         Set<UUID> set = opponents.get(player.getUniqueId());
         return set != null && !set.isEmpty();

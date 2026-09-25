@@ -100,6 +100,21 @@ public class PluginConfig {
         return config.getBoolean("combat-log.triggers.enderpearl.only-if-already-in-combat", false);
     }
 
+    public TagMode tagMode() {
+        String raw = config.getString("combat-log.triggers.tag-mode", "both");
+        try {
+            return TagMode.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return TagMode.BOTH;
+        }
+    }
+
+    public double startBelowHealth() {
+        return config.getDouble("combat-log.triggers.start-below-health", 0.0);
+    }
+
+    public enum TagMode { BOTH, ATTACKER, VICTIM }
+
     public boolean untagOnKillEnabled() {
         return config.getBoolean("combat-log.triggers.untag-on-kill", true);
     }

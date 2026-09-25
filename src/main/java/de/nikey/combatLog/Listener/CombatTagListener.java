@@ -39,7 +39,19 @@ public class CombatTagListener implements Listener {
         if (damager == null || damager == damaged) return;
         if (damager.hasPermission("combatlog.bypass")) return;
 
-        combat.tagBoth(damaged, damager);
+        boolean alreadyInCombat = combat.isInCombat(damaged) || combat.isInCombat(damager);
+        if (!alreadyInCombat && !reachesHealthThreshold(damaged, event.getFinalDamage())) return;
+
+        switch (config.tagMode()) {
+            case BOTH -> combat.tagBoth(damaged, damager);
+            case ATTACKER -> combat.tagAgainst(damager, damaged);
+            case VICTIM -> combat.tagAgainst(damaged, damager);
+        }
+    }
+
+    private boolean reachesHealthThreshold(Player damaged, double finalDamage) {
+        double threshold = config.startBelowHealth();
+        return threshold <= 0 || damaged.getHealth() - finalDamage <= threshold;
     }
 
     private Player resolveAttacker(Entity damagerEntity) {
@@ -69,6 +81,8 @@ public class CombatTagListener implements Listener {
             return;
         }
 
+        if (!combat.isInCombat(damaged) && !reachesHealthThreshold(damaged, event.getFinalDamage())) return;
+
         combat.tag(damaged);
         damaged.setGliding(false);
     }
@@ -91,6 +105,8 @@ public class CombatTagListener implements Listener {
                 && event.getDamager().getType() == Material.RESPAWN_ANCHOR;
 
         if (!isBlockExplosion && !isRespawnAnchor) return;
+
+        if (!combat.isInCombat(damaged) && !reachesHealthThreshold(damaged, event.getFinalDamage())) return;
 
         combat.tag(damaged);
         damaged.setGliding(false);

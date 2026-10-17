@@ -12,7 +12,7 @@
     <name>CombatLog</name>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -40,7 +40,6 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <outputDirectory>C:\Users\NikeyV1\AppData\Roaming\.dawn\hosted-servers\servers\299dfa76-3873-49e9-9a6f-40790d54094d\plugins</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
@@ -83,7 +82,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21.11-R0.1-SNAPSHOT</version>
+            <version>26.3.build.200-stable</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
